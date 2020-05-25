@@ -58,7 +58,7 @@ namespace {
 	void print_help(const char *prog, const char *version) {
 		std::cerr <<	"Usage: " << prog << " [options]\nExecutes linux-hunter " << version << "\n\n"
 				"-p, --mhw-pid p   Specifies which pid to scan memory for (usually main MH:W)\n"
-				"-s, --save dir    Captures the specified pid into directory 'dir' ('dir' has to exist) and quits\n"
+				"-s, --save dir    Captures the specified pid into directory 'dir' and quits\n"
 				"-l, --load dir    Loads the specified capture directory 'dir' and displays info (static - useful for debugging)\n"
 				"    --debug-ptrs  Prints the main AoB (Array of Bytes) pointers (useful for debugging)\n"
 				"    --help        prints this help and exit\n\n"

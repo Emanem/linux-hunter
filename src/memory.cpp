@@ -16,13 +16,14 @@
  * */
 
 #include "memory.h"
-#include <algorithm>
-#include <cstring>
-#include <sys/types.h>
-#include <dirent.h>
 #include <fstream>
 #include <iostream>
 #include <memory>
+#include <algorithm>
+#include <cstring>
+#include <sys/types.h>
+#include <sys/stat.h>
+#include <dirent.h>
 #include <sys/uio.h>
 
 memory::pattern::pattern() : mem_location(-1) {
@@ -187,8 +188,10 @@ void memory::browser::snap(void) {
 
 void memory::browser::store(const char* dir_name) {
 	auto	*d = opendir(dir_name);
-	if(!d) throw std::runtime_error("Can't store data, invalid directory");
-	else closedir(d);
+	if(!d) {
+		if(mkdir(dir_name, S_IRWXU | S_IRWXG | S_IROTH | S_IXOTH))
+			throw std::runtime_error((std::string("Can't find nor create directory '") + dir_name + "'").c_str());
+	} else closedir(d);
 	for(const auto& v : all_regions_) {
 		char		f_name[256];
 		std::snprintf(f_name, 255, "%s/mem.%016lx-%016lx.bin", dir_name, v.beg, v.end);
