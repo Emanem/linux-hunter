@@ -1,10 +1,10 @@
 # linux-hunter
 Prototype MH:W companion app for Linux, inspired by SmartHunter.
 
-![Before Hunt](https://raw.githubusercontent.com/Emanem/linux-hunter/master/pics/start_hunt.jpg)<!-- .element height="25%" width="25%" -->
-![Mid Hunt](https://raw.githubusercontent.com/Emanem/linux-hunter/master/pics/mid_hunt.jpg)<!-- .element height="25%" width="25%" -->
-![End Hunt](https://raw.githubusercontent.com/Emanem/linux-hunter/master/pics/end_hunt.jpg)<!-- .element height="25%" width="25%" -->
-![Back from Hunt](https://raw.githubusercontent.com/Emanem/linux-hunter/master/pics/back_gathering.jpg)<!-- .element height="25%" width="25%" -->
+![Before Hunt](https://raw.githubusercontent.com/Emanem/linux-hunter/master/pics/start_hunt.jpg)
+![Mid Hunt](https://raw.githubusercontent.com/Emanem/linux-hunter/master/pics/mid_hunt.jpg)
+![End Hunt](https://raw.githubusercontent.com/Emanem/linux-hunter/master/pics/end_hunt.jpg)
+![Back from Hunt](https://raw.githubusercontent.com/Emanem/linux-hunter/master/pics/back_gathering.jpg)
 
 ## Status
 Current code/logic is highly prototype and unoptimized - please refrain from using it, or use it at your own risk.
