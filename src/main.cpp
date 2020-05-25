@@ -16,6 +16,9 @@
  * */
 
 #include <iostream>
+#include <sstream>
+#include <getopt.h>
+#include <cstring>
 #include "patterns.h"
 #include "offsets.h"
 #include "memory.h"
@@ -43,6 +46,85 @@ namespace {
 	}
 }
 
+namespace {
+	const char*	VERSION = "0.0.1";
+
+	// settings/options management
+	pid_t		mhw_pid = -1;
+	std::string	save_dir,
+			load_dir;
+	bool		debug_ptrs = false;
+
+	void print_help(const char *prog, const char *version) {
+		std::cerr <<	"Usage: " << prog << " [options]\nExecutes linux-hunter " << version << "\n\n"
+				"-p, --mhw-pid p   Specifies which pid to scan memory for (usually main MH:W)\n"
+				"-s, --save dir    Captures the specified pid into directory 'dir' ('dir' has to exist) and quits\n"
+				"-l, --load dir    Loads the specified capture directory 'dir' and displays info (static - useful for debugging)\n"
+				"    --debug-ptrs  Prints the main AoB (Array of Bytes) pointers (useful for debugging)\n"
+				"    --help        prints this help and exit\n\n"
+				"Press 'q' or 'ESC' inside linux-hunter to quit, 'SPACE' or 'p' to pause nettop\n"
+		<< std::flush;
+	}
+
+	int parse_args(int argc, char *argv[], const char *prog, const char *version) {
+		int			c;
+		static struct option	long_options[] = {
+			{"help",		no_argument,	   0,	0},
+			{"mhw-pid",		required_argument, 0,   'p'},
+			{"save",		required_argument, 0,	's'},
+			{"load",		required_argument, 0,	'l'},
+			{"debug-ptrs",		no_argument,	   0,	0},
+			{0, 0, 0, 0}
+		};
+
+		while (1) {
+			// getopt_long stores the option index here
+			int		option_index = 0;
+
+			if(-1 == (c = getopt_long(argc, argv, "p:s:l:", long_options, &option_index)))
+				break;
+
+			switch (c) {
+			case 0: {
+				// If this option set a flag, do nothing else now
+				if (long_options[option_index].flag != 0)
+					break;
+				if(!std::strcmp("help", long_options[option_index].name)) {
+					print_help(prog, version);
+					std::exit(0);
+				} else if (!std::strcmp("debug-ptrs", long_options[option_index].name)) {
+					debug_ptrs = true;
+				}
+			} break;
+
+			case 'p': {
+				mhw_pid = std::atoi(optarg);
+			} break;
+
+			case 's': {
+				save_dir = optarg;
+				if(!save_dir.empty() && (*save_dir.rbegin() == '/'))
+					save_dir.resize(save_dir.size()-1);
+			} break;
+
+			case 'l': {
+				load_dir = optarg;
+				if(!load_dir.empty() && (*load_dir.rbegin() == '/'))
+					load_dir.resize(load_dir.size()-1);
+			} break;
+
+			case '?':
+			break;
+
+			default:
+				throw std::runtime_error((std::string("Invalid option '") + (char)c + "'").c_str());
+			}
+		}
+		return optind;
+	}
+}
+
+
 int main(int argc, char *argv[]) {
 	try {
 		memory::pattern	p0(patterns::PlayerName),
@@ -53,32 +135,45 @@ int main(int argc, char *argv[]) {
 				p5(patterns::Emetta),
 				p6(patterns::PlayerNameLinux);
 		memory::pattern	*p_vec[] = { &p0, &p1, &p2, &p3, &p4 , &p5, &p6 };
-
-		if(argc < 2)
-			throw std::runtime_error("missing argument MH:W pid");
-
-		const int	mhw_pid = std::atoi(argv[1]);
-
-		memory::browser	b;
-		//b.snap(mhw_pid);
-		bool load = false;
-		if(load) {
-		b.load("mhw_dump");
-		for(const auto p : p_vec) {
-			const auto rv = b.find_first(*p);
-			std::printf("%-16s\t%16li\n", p->name.c_str(), rv);
-			/*
-			 * This code is used to ensure the read_mem was
-			 * actually working... seems to be :-)
-			if(rv > 0) {
-				const uint64_t	u64 = b.read_mem<uint64_t>(rv);
-				print_bin(u64, std::cout);
-				std::cout << std::endl;
-			}*/
+		// parse args first
+		const auto optind = parse_args(argc, argv, argv[0], VERSION);
+		// check come consistency
+		if(!load_dir.empty() && !save_dir.empty())
+			throw std::runtime_error("Can't specify both 'load' and 'save' options");
+		// start here...
+		memory::browser	b(mhw_pid);
+		// if we're in load mode fill b
+		// with content from the disk
+		if(!load_dir.empty()) {
+			std::cerr << "Loading memory content from directory '" << load_dir << "'..." << std::endl;
+			b.load(load_dir.c_str());
+			std::cerr << "done" << std::endl;
+		} else {
+			b.snap();
+			// if in save mode, save and exit
+			if(!save_dir.empty()) {
+				std::cerr << "Saving memory content to directory '" << save_dir << "'..." << std::endl;
+				b.store(save_dir.c_str());
+				std::cerr << "done" << std::endl;
+				return 0;
+			}
 		}
-		return 0;
+		// print out basic patterns
+		for(auto p : p_vec) {
+			p->mem_location = b.find_first(*p);
+			if(debug_ptrs) {
+				/*
+				 * This code is used to ensure the read_mem was
+				 * actually working... seems to be :-)
+				 */
+				std::ostringstream	ostr;
+				if(p->mem_location > 0) {
+					const uint64_t	u64 = b.read_mem<uint64_t>(p->mem_location);
+					print_bin(u64, ostr);
+				}
+				std::fprintf(stderr, "%-16s\t%16li\t%s\n", p->name.c_str(), p->mem_location, ostr.str().c_str());
+			}
 		}
-		b.load("mhw_dump");
 		// try get player name
 		{
 			const auto 	rv = b.find_first(p6);

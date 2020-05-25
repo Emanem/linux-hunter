@@ -33,6 +33,7 @@ namespace memory {
 		};
 		std::vector<offlen>	matches;
 		std::string		name;
+		ssize_t			mem_location;
 
 		pattern();
 		pattern(const patterns::pattern& p);
@@ -67,19 +68,20 @@ namespace memory {
 			}
 		};
 
+		pid_t			pid_;
 		std::vector<mem_region>	all_regions_;
 
-		void snap_pid(const pid_t pid);
+		void snap_pid(void);
 
 		ssize_t find_once(const pattern& p, const uint8_t* buf, const size_t sz, pbyte& hint) const;
 
 		void verify_regions(void);
 	public:
-		browser();
+		browser(const pid_t p);
 
 		~browser();
 
-		void snap(const pid_t pid);
+		void snap(void);
 
 		void store(const char* dir_name);
 		

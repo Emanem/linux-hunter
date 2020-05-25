@@ -25,10 +25,10 @@
 #include <memory>
 #include <sys/uio.h>
 
-memory::pattern::pattern() {
+memory::pattern::pattern() : mem_location(-1) {
 }
 
-memory::pattern::pattern(const patterns::pattern& p) {
+memory::pattern::pattern(const patterns::pattern& p) : mem_location(-1) {
 	size_t		tgt_offset = 0;
 	const char	*cur_text_byte = p.bytes,
 			*cur_text_end = p.bytes + std::strlen(p.bytes);
@@ -75,7 +75,10 @@ void memory::pattern::print(std::ostream& ostr) {
 	}
 }
 
-void memory::browser::snap_pid(const pid_t pid) {
+void memory::browser::snap_pid(void) {
+	if(pid_ < 0)
+		throw std::runtime_error((std::string("Can't snap invalid pid (" + std::to_string(pid_) + ")")).c_str());
+
 	all_regions_.clear();
 	/* example :
 	* 5662e000-56a21000 r-xp 00000000 08:16 29098197                           /home/ema/.steam/ubuntu12_32/steam
@@ -86,7 +89,7 @@ void memory::browser::snap_pid(const pid_t pid) {
 	* cbbfd000-cbbfe000 ---p 00000000 00:00 0 
 	* 
 	* */
-	const std::string	maps_name = std::string("/proc/") + std::to_string(pid) + "/maps";
+	const std::string	maps_name = std::string("/proc/") + std::to_string(pid_) + "/maps";
 	std::ifstream		istr(maps_name.c_str());
 	if(!istr)
 		throw std::runtime_error("Can't open /proc/.../maps");
@@ -107,7 +110,7 @@ void memory::browser::snap_pid(const pid_t pid) {
 		const ssize_t		sz = v.end - v.beg;
 		const struct iovec	local = { (void*)v.data, (size_t)sz },
 					remote = { (void*)v.beg, (size_t)sz };
-		const auto		rv = process_vm_readv(pid, &local, 1, &remote, 1, 0);
+		const auto		rv = process_vm_readv(pid_, &local, 1, &remote, 1, 0);
 		if(-1 >= rv) {
 			std::cerr << "Region: " << v.debug_info << " Error with process_vm_readv (" << std::to_string(errno) << " " << strerror(errno) << ")" << std::endl;
 			v.data_sz = -1;
@@ -171,14 +174,14 @@ void memory::browser::verify_regions(void) {
 	}
 }
 
-memory::browser::browser() {
+memory::browser::browser(const pid_t p) : pid_(p) {
 }
 
 memory::browser::~browser() {
 }
 
-void memory::browser::snap(const pid_t pid) {
-	snap_pid(pid);
+void memory::browser::snap(void) {
+	snap_pid();
 	verify_regions();
 }
 
