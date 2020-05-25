@@ -1,6 +1,20 @@
 # linux-hunter
 Prototype MH:W companion app for Linux, inspired by SmartHunter.
 
+## Table of Contents
+
+* [Screenshots](#screenshots)
+* [Status](#status)
+* [Linux differences](#linux-differences)
+ * [AoB structures](#aob-structures)
+ * [Strings are longer](#strings-are-longer)
+* [Root access](#root-access)
+* [How to build](#how-to-build)
+* [How to run](#how-to-run)
+* [Credits](#credits)
+
+## Screenshots
+
 ![Before Hunt](https://raw.githubusercontent.com/Emanem/linux-hunter/master/pics/start_hunt.jpg)
 ![Mid Hunt](https://raw.githubusercontent.com/Emanem/linux-hunter/master/pics/mid_hunt.jpg)
 ![End Hunt](https://raw.githubusercontent.com/Emanem/linux-hunter/master/pics/end_hunt.jpg)
@@ -12,13 +26,13 @@ Current code/logic is highly prototype and unoptimized - please refrain from usi
 ## Linux differences
 Following the main differences I had to overcome to port the logic of SmartHunter to Linux; considering the challenges below, I think I've been lucky so far.
 
-### AoB structures are not the same
+### AoB structures
 Some AoB structures (_Array of Bytes_) that are used to lookup pointers are slightly different.
 For example, look at [PlayerName AoB](https://github.com/Emanem/linux-hunter/blob/6b397574ff51d5c37b2dc4f2ec32e6558901a807/src/patterns.cpp#L31): that doesn't work on Linux, but then I had to modify it and a similar version [PlayerNameLinux AoB](https://github.com/Emanem/linux-hunter/blob/6b397574ff51d5c37b2dc4f2ec32e6558901a807/src/patterns.cpp#L61) does instead the trick.
 
 Other AoBs such as [PlayerDamage](https://github.com/Emanem/linux-hunter/blob/6b397574ff51d5c37b2dc4f2ec32e6558901a807/src/patterns.cpp#L41) can be found straight away.
 
-### Some strings are longer on Linux
+### Strings are longer 
 When reading the players' names I have to [add one byte](https://github.com/Emanem/linux-hunter/blob/6b397574ff51d5c37b2dc4f2ec32e6558901a807/src/main.cpp#L149); compare the similar logic in [SmartHunter](https://github.com/sir-wilhelm/SmartHunter/blob/7fa3d5a30a653f3587d3ba32afec195224690b9c/SmartHunter/Game/Helpers/MhwHelper.cs#L298).
 
 ## Root access
