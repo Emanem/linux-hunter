@@ -2,7 +2,7 @@
 #define _UI_H_
 
 #include <string>
-#include <curses.h>
+#include <ncurses.h>
 
 namespace ui {
 	struct data {

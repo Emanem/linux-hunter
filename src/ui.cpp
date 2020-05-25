@@ -7,6 +7,9 @@ namespace {
 // colors list at https://stackoverflow.com/questions/47686906/ncurses-init-color-has-no-effect
 
 ui::window::window() : w_(initscr()) {
+	// this is needed for ncursesw to print out
+	// wchar_t ...
+	setlocale(LC_CTYPE, "");
 	if(has_colors()) {
 		use_default_colors();
 		start_color();
@@ -65,11 +68,12 @@ void ui::window::draw(const char* version, const ui::data& d) {
 		xoffset += 12;
 		mvprintw(base_row, xoffset, "] Host:[", buf);
 		xoffset += 8;
-		const auto host_len = std::snprintf(buf, 33, "%ls", d.host_name.c_str());
 		attron(A_BOLD);
-		mvprintw(base_row, xoffset, "%s", buf);
+		mvaddwstr(base_row, xoffset, d.host_name.c_str());
 		attroff(A_BOLD);
-		xoffset += host_len;
+		// use wcslen because the string may have
+		// many unused \0 at the end
+		xoffset += std::wcslen(d.host_name.c_str());
 		mvprintw(base_row, xoffset, "]");
 		base_row += 2;
 	}
@@ -87,7 +91,7 @@ void ui::window::draw(const char* version, const ui::data& d) {
 	for(size_t i = 0; i < sizeof(d.players)/sizeof(d.players[0]); ++i, ++base_row) {
 		int	xoffset = 0;
 		attron(COLOR_PAIR(PLAYER_COLORS[i]));
-		mvprintw(base_row, xoffset, "%-32ls", d.players[i].name.c_str());
+		mvaddwstr(base_row, xoffset, d.players[i].name.c_str());
 		xoffset += 32;
 		attroff(COLOR_PAIR(PLAYER_COLORS[i]));
 		mvprintw(base_row, xoffset, "%-4d", i);
