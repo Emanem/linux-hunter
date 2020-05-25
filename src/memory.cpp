@@ -175,6 +175,24 @@ void memory::browser::verify_regions(void) {
 	}
 }
 
+void memory::browser::refresh_region(mem_region& r) {
+	if(pid_ < 0)
+		return;
+
+	const ssize_t		sz = r.end - r.beg;
+	const struct iovec	local = { (void*)r.data, (size_t)sz },
+				remote = { (void*)r.beg, (size_t)sz };
+	const auto		rv = process_vm_readv(pid_, &local, 1, &remote, 1, 0);
+	if(-1 >= rv) {
+		std::cerr << "Region: " << r.debug_info << " Error with process_vm_readv (" << std::to_string(errno) << " " << strerror(errno) << ")" << std::endl;
+		r.data_sz = -1;
+		return;
+	}
+	if(sz != rv) {
+		r.data_sz = rv;
+	}
+}
+
 memory::browser::browser(const pid_t p) : pid_(p) {
 }
 
@@ -269,14 +287,16 @@ ssize_t memory::browser::find_first(const pattern& p, const size_t start_addr) {
 	return -1;
 }
 
-std::string memory::browser::read_utf8(const size_t addr, const size_t len) {
+std::string memory::browser::read_utf8(const size_t addr, const size_t len, const bool refresh) {
 	// pre-condition: all_regions_ is
 	// actually correctly formatted
 	// addr between boundaries is _not_
 	// supported
-	for(const auto& v : all_regions_) {
+	for(auto& v : all_regions_) {
 		if(v.beg > addr || v.end <= addr)
 			continue;
+		if(refresh)
+			refresh_region(v);
 		if(addr + len > (v.data_sz + v.beg))
 			throw std::runtime_error("Can't interpret memory, T size too large");
 		const char*	utf8_ptr = (const char*)&v.data[addr - v.beg];
@@ -285,12 +305,12 @@ std::string memory::browser::read_utf8(const size_t addr, const size_t len) {
 	throw std::runtime_error("Coudln't find specified address");
 }
 
-size_t memory::browser::load_effective_addr_rel(const size_t addr) {
+size_t memory::browser::load_effective_addr_rel(const size_t addr, const bool refresh) {
 	const int	opcodeLength = 3,
 			paramLength = 4,
 			instructionLength = opcodeLength + paramLength;
 
-	uint32_t operand = read_mem<uint32_t>(addr + opcodeLength);
+	uint32_t operand = read_mem<uint32_t>(addr + opcodeLength, refresh);
 	uint64_t operand64 = operand;
 
 	// 64 bit relative addressing 
@@ -300,10 +320,10 @@ size_t memory::browser::load_effective_addr_rel(const size_t addr) {
 	return addr + operand64 + instructionLength;
 }
 
-size_t memory::browser::load_multilevel_addr_rel(const size_t addr, const uint32_t* off_b, const uint32_t* off_e) {
+size_t memory::browser::load_multilevel_addr_rel(const size_t addr, const uint32_t* off_b, const uint32_t* off_e, const bool refresh) {
 	size_t	rv = addr;
 	for(auto i = off_b; i != off_e; ++i) {
-		const auto	cur_rv = read_mem<size_t>(rv);
+		const auto	cur_rv = read_mem<size_t>(rv, refresh);
 		rv = (uint32_t)(cur_rv) + *i;
 
 	}

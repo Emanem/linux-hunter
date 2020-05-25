@@ -76,6 +76,8 @@ namespace memory {
 		ssize_t find_once(const pattern& p, const uint8_t* buf, const size_t sz, pbyte& hint) const;
 
 		void verify_regions(void);
+
+		void refresh_region(mem_region& r);
 	public:
 		browser(const pid_t p);
 
@@ -90,14 +92,16 @@ namespace memory {
 		ssize_t find_first(const pattern& p, const size_t start_addr = 0);
 
 		template<typename T>
-		T read_mem(const size_t addr) {
+		T read_mem(const size_t addr, const bool refresh = false) {
 			// pre-condition: all_regions_ is
 			// actually correctly formatted
 			// addr between boundaries is _not_
 			// supported
-			for(const auto& v : all_regions_) {
+			for(auto& v : all_regions_) {
 				if(v.beg > addr || v.end <= addr)
 					continue;
+				if(refresh)
+					refresh_region(v);
 				if(addr + sizeof(T) > (v.data_sz + v.beg))
 					throw std::runtime_error("Can't interpret memory, T size too large");
 				return *(T*)&v.data[addr - v.beg];
@@ -105,11 +109,11 @@ namespace memory {
 			throw std::runtime_error("Coudln't find specified address");
 		}
 
-		std::string read_utf8(const size_t addr, const size_t len);
+		std::string read_utf8(const size_t addr, const size_t len, const bool refresh = false);
 
-		size_t load_effective_addr_rel(const size_t addr);
+		size_t load_effective_addr_rel(const size_t addr, const bool refresh = false);
 
-		size_t load_multilevel_addr_rel(const size_t addr, const uint32_t* off_b, const uint32_t* off_e);
+		size_t load_multilevel_addr_rel(const size_t addr, const uint32_t* off_b, const uint32_t* off_e, const bool refresh = false);
 	};
 }
 

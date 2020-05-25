@@ -17,11 +17,13 @@
 
 #include <iostream>
 #include <sstream>
+#include <thread>
 #include <getopt.h>
 #include <cstring>
 #include "patterns.h"
 #include "offsets.h"
 #include "memory.h"
+#include "ui.h"
 
 // Useful links with the SmartHunter sources; note that
 // sir-wilhelm is the one up to date with most recent
@@ -62,7 +64,7 @@ namespace {
 				"-l, --load dir    Loads the specified capture directory 'dir' and displays info (static - useful for debugging)\n"
 				"    --debug-ptrs  Prints the main AoB (Array of Bytes) pointers (useful for debugging)\n"
 				"    --help        prints this help and exit\n\n"
-				"Press 'q' or 'ESC' inside linux-hunter to quit, 'SPACE' or 'p' to pause nettop\n"
+				"Press 'q' or 'ESC' inside linux-hunter to quit\n"
 		<< std::flush;
 	}
 
@@ -124,9 +126,68 @@ namespace {
 	}
 }
 
+namespace {
+	// try get player name
+	bool get_data_session(const memory::pattern& mp_Player, memory::browser& mb, ui::data& d) {
+		const auto	pnameptr = mb.load_effective_addr_rel(mp_Player.mem_location, true);
+		const auto	pnameaddr = mb.read_mem<uint32_t>(pnameptr, true);
+		// get session name (this should be UTF-8)...
+		d.session_id = mb.read_utf8(pnameaddr + offsets::PlayerNameCollection::SessionID, offsets::PlayerNameCollection::IDLength, true);
+		d.host_name = mb.read_utf8(pnameaddr + offsets::PlayerNameCollection::SessionHostPlayerName, offsets::PlayerNameCollection::PlayerNameLength, true);
+		return true;
+	}
+	// try get player damage (need name too)
+	bool get_data_damage(const memory::pattern& mp_Player, const memory::pattern& mp_Damage, memory::browser& mb, ui::data& d) {
+		const auto	pnameptr = mb.load_effective_addr_rel(mp_Player.mem_location, true);
+		const auto	pnameaddr = mb.read_mem<uint32_t>(pnameptr, true);
+		const auto	pdmgroot = mb.load_effective_addr_rel(mp_Damage.mem_location, true);
+		const uint32_t	pdmgml[] = { offsets::PlayerDamageCollection::FirstPlayerPtr + (offsets::PlayerDamageCollection::MaxPlayerCount * sizeof(size_t) * offsets::PlayerDamageCollection::NextPlayerPtr ) };
+		const auto	pdmglistaddr = mb.load_multilevel_addr_rel(pdmgroot, &pdmgml[0], &pdmgml[1], true);
+		// for each player...
+		for(uint32_t i = 0; i < offsets::PlayerDamageCollection::MaxPlayerCount; ++i) {
+			const auto	pnameoffset = offsets::PlayerNameCollection::PlayerNameLength * i;
+			d.players[i].name = mb.read_utf8(pnameaddr + offsets::PlayerNameCollection::FirstPlayerName + pnameoffset, offsets::PlayerNameCollection::PlayerNameLength, true);
+			d.players[i].used = !d.players[i].name.empty();
+			if(!d.players[i].used)
+				continue;
+			const auto	pfirstplayer = pdmglistaddr + offsets::PlayerDamageCollection::FirstPlayerPtr;
+			const auto	pcurplayer = pfirstplayer + offsets::PlayerDamageCollection::NextPlayerPtr * i;
+			const auto	curplayeraddr = mb.read_mem<size_t>(pcurplayer, true);
+			d.players[i].damage = mb.read_mem<int32_t>(curplayeraddr + offsets::PlayerDamageCollection::Damage, true);
+		}
+		return true;
+	}
+
+	void get_data(const memory::pattern& mp_Player, const memory::pattern& mp_Damage, memory::browser& mb, ui::data& d) {
+		d = ui::data();
+		if(!get_data_session(mp_Player, mb, d))
+			return;
+		if(!get_data_damage(mp_Player, mp_Damage, mb, d))
+			return;
+	}
+}
 
 int main(int argc, char *argv[]) {
 	try {
+		/*ui::window	w;
+		ui::data	d;
+		d.session_id = "Camw+P?+dNLP";
+		d.host_name = "Emetta";
+		d.players[0].used = true;
+		d.players[0].name = "Jomgor";
+		d.players[0].damage = 5909;
+		d.players[1].used = true;
+		d.players[1].name = "Shenanagins";
+		d.players[1].damage = 8736;
+		d.players[2].used = true;
+		d.players[2].name = "Emetta";
+		d.players[2].damage = 18266;
+		d.players[3].used = true;
+		d.players[3].name = "xyz";
+		d.players[3].damage = 6426;
+		w.draw(VERSION, d);
+		std::this_thread::sleep_for(std::chrono::milliseconds(5000));
+		return 0;*/
 		memory::pattern	p0(patterns::PlayerName),
 				p1(patterns::CurrentPlayerName),
 				p2(patterns::PlayerDamage),
@@ -141,26 +202,27 @@ int main(int argc, char *argv[]) {
 		if(!load_dir.empty() && !save_dir.empty())
 			throw std::runtime_error("Can't specify both 'load' and 'save' options");
 		// start here...
-		memory::browser	b(mhw_pid);
+		memory::browser	mb(mhw_pid);
 		// if we're in load mode fill b
 		// with content from the disk
 		if(!load_dir.empty()) {
 			std::cerr << "Loading memory content from directory '" << load_dir << "'..." << std::endl;
-			b.load(load_dir.c_str());
+			mb.load(load_dir.c_str());
 			std::cerr << "done" << std::endl;
 		} else {
-			b.snap();
+			mb.snap();
 			// if in save mode, save and exit
 			if(!save_dir.empty()) {
 				std::cerr << "Saving memory content to directory '" << save_dir << "'..." << std::endl;
-				b.store(save_dir.c_str());
+				mb.store(save_dir.c_str());
 				std::cerr << "done" << std::endl;
 				return 0;
 			}
 		}
 		// print out basic patterns
+		std::cerr << "Finding main AoB entry points..." << std::endl;
 		for(auto p : p_vec) {
-			p->mem_location = b.find_first(*p);
+			p->mem_location = mb.find_first(*p);
 			if(debug_ptrs) {
 				/*
 				 * This code is used to ensure the read_mem was
@@ -168,42 +230,23 @@ int main(int argc, char *argv[]) {
 				 */
 				std::ostringstream	ostr;
 				if(p->mem_location > 0) {
-					const uint64_t	u64 = b.read_mem<uint64_t>(p->mem_location);
+					const uint64_t	u64 = mb.read_mem<uint64_t>(p->mem_location);
 					print_bin(u64, ostr);
 				}
 				std::fprintf(stderr, "%-16s\t%16li\t%s\n", p->name.c_str(), p->mem_location, ostr.str().c_str());
 			}
 		}
-		// try get player name
-		{
-			const auto 	rv = b.find_first(p6);
-			const auto	pnameptr = b.load_effective_addr_rel(rv);
-			const auto	pnameaddr = b.read_mem<uint32_t>(pnameptr);
-			// get session name (this should be UTF-8)...
-			const auto	sname = b.read_utf8(pnameaddr + offsets::PlayerNameCollection::SessionID, offsets::PlayerNameCollection::IDLength);
-			std::cout << "sname: " << sname << std::endl;
-			const auto	shostname = b.read_utf8(pnameaddr + offsets::PlayerNameCollection::SessionHostPlayerName, offsets::PlayerNameCollection::PlayerNameLength);
-			std::cout << "shostname: " << shostname << std::endl;
-		}
-		// try get player damage (need name too)
-		{
-			const auto 	rv = b.find_first(p6);
-			const auto	pnameptr = b.load_effective_addr_rel(rv);
-			const auto	pnameaddr = b.read_mem<uint32_t>(pnameptr);
-			const auto 	rvdmg = b.find_first(p2);
-			const auto	pdmgroot = b.load_effective_addr_rel(rvdmg);
-			const uint32_t	pdmgml[] = { offsets::PlayerDamageCollection::FirstPlayerPtr + (offsets::PlayerDamageCollection::MaxPlayerCount * sizeof(size_t) * offsets::PlayerDamageCollection::NextPlayerPtr ) };
-			const auto	pdmglistaddr = b.load_multilevel_addr_rel(pdmgroot, &pdmgml[0], &pdmgml[1]);
-			// for each player...
-			for(uint32_t i = 0; i < offsets::PlayerDamageCollection::MaxPlayerCount; ++i) {
-				const auto	pnameoffset = offsets::PlayerNameCollection::PlayerNameLength * i;
-				const auto	name = b.read_utf8(pnameaddr + offsets::PlayerNameCollection::FirstPlayerName + pnameoffset, offsets::PlayerNameCollection::PlayerNameLength);
-				const auto	pfirstplayer = pdmglistaddr + offsets::PlayerDamageCollection::FirstPlayerPtr;
-				const auto	pcurplayer = pfirstplayer + offsets::PlayerDamageCollection::NextPlayerPtr * i;
-				const auto	curplayeraddr = b.read_mem<size_t>(pcurplayer);
-				const auto	cplayerdmg = b.read_mem<int>(curplayeraddr + offsets::PlayerDamageCollection::Damage);
-				std::cout << "Player " << i << ":\t" << cplayerdmg << std::endl;
-			}
+		std::cerr << "Done" << std::endl;
+		if(-1 == p6.mem_location || -1 == p2.mem_location)
+			throw std::runtime_error("Can't find AoB for patterns::PlayerNameLinux and/or patterns::PlayerDamage");
+		// main loop
+		// TODO manage keyboards input
+		ui::window	w;
+		ui::data	d;
+		while(true) {
+			get_data(p6, p2, mb, d);
+			w.draw(VERSION, d);
+			std::this_thread::sleep_for(std::chrono::milliseconds(1000));
 		}
 	} catch(const std::exception& e) {
 		std::cerr << "Exception: " << e.what() << std::endl;
