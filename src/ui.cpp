@@ -58,14 +58,14 @@ void ui::window::draw(const char* version, const ui::data& d) {
 		int	xoffset = 0;
 		mvprintw(base_row, xoffset, "SessionId:[");
 		xoffset += 11;
-		std::snprintf(buf, 13, "%s", d.session_id.c_str());
+		std::snprintf(buf, 13, "%ls", d.session_id.c_str());
 		attron(A_BOLD);
 		mvprintw(base_row, xoffset, "%s", buf);
 		attroff(A_BOLD);
 		xoffset += 12;
 		mvprintw(base_row, xoffset, "] Host:[", buf);
 		xoffset += 8;
-		const auto host_len = std::snprintf(buf, 33, "%s", d.host_name.c_str());
+		const auto host_len = std::snprintf(buf, 33, "%ls", d.host_name.c_str());
 		attron(A_BOLD);
 		mvprintw(base_row, xoffset, "%s", buf);
 		attroff(A_BOLD);
@@ -87,7 +87,7 @@ void ui::window::draw(const char* version, const ui::data& d) {
 	for(size_t i = 0; i < sizeof(d.players)/sizeof(d.players[0]); ++i, ++base_row) {
 		int	xoffset = 0;
 		attron(COLOR_PAIR(PLAYER_COLORS[i]));
-		mvprintw(base_row, xoffset, "%-32s", d.players[i].name.c_str());
+		mvprintw(base_row, xoffset, "%-32ls", d.players[i].name.c_str());
 		xoffset += 32;
 		attroff(COLOR_PAIR(PLAYER_COLORS[i]));
 		mvprintw(base_row, xoffset, "%-4d", i);

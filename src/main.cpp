@@ -145,7 +145,8 @@ namespace {
 		const auto	pdmglistaddr = mb.load_multilevel_addr_rel(pdmgroot, &pdmgml[0], &pdmgml[1], true);
 		// for each player...
 		for(uint32_t i = 0; i < offsets::PlayerDamageCollection::MaxPlayerCount; ++i) {
-			const auto	pnameoffset = offsets::PlayerNameCollection::PlayerNameLength * i;
+			// not sure why, but on Linux the offset has 1 more byte for each entry...
+			const auto	pnameoffset = offsets::PlayerNameCollection::PlayerNameLength * i + i*1;
 			d.players[i].name = mb.read_utf8(pnameaddr + offsets::PlayerNameCollection::FirstPlayerName + pnameoffset, offsets::PlayerNameCollection::PlayerNameLength, true);
 			d.players[i].used = !d.players[i].name.empty();
 			if(!d.players[i].used)

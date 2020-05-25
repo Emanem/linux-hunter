@@ -8,12 +8,12 @@ namespace ui {
 	struct data {
 		struct player_info {
 			bool		used = false;
-			std::string	name;
+			std::wstring	name;
 			int32_t		damage = 0;
 
 		};
 
-		std::string	session_id,
+		std::wstring	session_id,
 				host_name;
 		player_info	players[4];
 	};

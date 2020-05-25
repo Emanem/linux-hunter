@@ -25,6 +25,7 @@
 #include <sys/stat.h>
 #include <dirent.h>
 #include <sys/uio.h>
+#include <iconv.h>
 
 memory::pattern::pattern() : mem_location(-1) {
 }
@@ -287,7 +288,24 @@ ssize_t memory::browser::find_first(const pattern& p, const size_t start_addr) {
 	return -1;
 }
 
-std::string memory::browser::read_utf8(const size_t addr, const size_t len, const bool refresh) {
+namespace {
+	std::wstring from_utf8(const char* in, size_t sz) {
+		std::wstring	rv;
+		rv.resize(sz);
+		auto		conv = iconv_open("WCHAR_T", "UTF-8");
+		char		*pIn = (char*)in,
+				*pOut = (char*)&rv[0];
+		size_t		sIn = sz,
+				sOut = sz*sizeof(wchar_t);
+		if(((void*)-1) == conv)
+			throw std::runtime_error("This system can't convert from UTF-8 to WCHAR_T");
+		iconv(conv, &pIn, &sIn, &pOut, &sOut);
+		iconv_close(conv);
+		return rv;
+	}
+}
+
+std::wstring memory::browser::read_utf8(const size_t addr, const size_t len, const bool refresh) {
 	// pre-condition: all_regions_ is
 	// actually correctly formatted
 	// addr between boundaries is _not_
@@ -300,7 +318,7 @@ std::string memory::browser::read_utf8(const size_t addr, const size_t len, cons
 		if(addr + len > (v.data_sz + v.beg))
 			throw std::runtime_error("Can't interpret memory, T size too large");
 		const char*	utf8_ptr = (const char*)&v.data[addr - v.beg];
-		return std::string((const char*)utf8_ptr, utf8_ptr + len);
+		return from_utf8(utf8_ptr, len);
 	}
 	throw std::runtime_error("Coudln't find specified address");
 }

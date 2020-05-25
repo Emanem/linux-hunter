@@ -109,7 +109,7 @@ namespace memory {
 			throw std::runtime_error("Coudln't find specified address");
 		}
 
-		std::string read_utf8(const size_t addr, const size_t len, const bool refresh = false);
+		std::wstring read_utf8(const size_t addr, const size_t len, const bool refresh = false);
 
 		size_t load_effective_addr_rel(const size_t addr, const bool refresh = false);
 
