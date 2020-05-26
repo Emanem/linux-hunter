@@ -53,8 +53,8 @@ void ui::window::draw(const app_data& ad, const mhw_data& d) {
 	{
 		int	xoffset = 0;
 		char	buf[256];
-		std::snprintf(buf, 24, "linux-hunter %s", ad.version);
-		mvprintw(base_row++, xoffset, "%-24s", buf);
+		std::snprintf(buf, 256, "linux-hunter %s        (%4ld/%4ld/%4ld w/u/s)", ad.version, ad.tm.wall, ad.tm.user, ad.tm.system);
+		mvprintw(base_row++, xoffset, "%-64s", buf);
 	}
 	// print main stats
 	{

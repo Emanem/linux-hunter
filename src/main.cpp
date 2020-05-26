@@ -58,6 +58,7 @@ namespace {
 			load_dir;
 	bool		debug_ptrs = false,
 			debug_all = false;
+	size_t		refresh_interval = 1000;
 
 	void print_help(const char *prog, const char *version) {
 		std::cerr <<	"Usage: " << prog << " [options]\nExecutes linux-hunter " << version << "\n\n"
@@ -68,6 +69,7 @@ namespace {
 				"    --debug-ptrs  Prints the main AoB (Array of Bytes) pointers (useful for debugging)\n"
 				"    --debug-all   Prints all the AoB (Array of Bytes) partial and full matches\n"
 				"                  (useful for analysing AoB) and quits; implies setting debug-ptrs\n"
+				"-r, --refresh i   Specifies what is the UI/stats refresh interval in ms (default 1000)\n"
 				"    --help        prints this help and exit\n\n"
 				"When linux-hunter is running:\n\n"
 				"'q' or 'ESC'      Quits the application\n"
@@ -84,6 +86,7 @@ namespace {
 			{"load",		required_argument, 0,	'l'},
 			{"debug-ptrs",		no_argument,	   0,	0},
 			{"debug-all",		no_argument,	   0,	0},
+			{"refresh",		required_argument, 0,   'r'},
 			{0, 0, 0, 0}
 		};
 
@@ -91,7 +94,7 @@ namespace {
 			// getopt_long stores the option index here
 			int		option_index = 0;
 
-			if(-1 == (c = getopt_long(argc, argv, "p:s:l:", long_options, &option_index)))
+			if(-1 == (c = getopt_long(argc, argv, "p:s:l:r:", long_options, &option_index)))
 				break;
 
 			switch (c) {
@@ -111,6 +114,11 @@ namespace {
 
 			case 'p': {
 				mhw_pid = std::atoi(optarg);
+			} break;
+
+			case 'r': {
+				refresh_interval = std::atoi(optarg);
+				if(refresh_interval <= 0) refresh_interval = 1000;
 			} break;
 
 			case 's': {
@@ -270,7 +278,7 @@ int main(int argc, char *argv[]) {
 			timer::thread_tmr	tt(&ad.tm);
 			get_data(p6, p2, mb, mhwd);
 			w.draw(ad, mhwd);
-			while(!kp.do_io(1000));
+			while(!kp.do_io(refresh_interval));
 		}
 	} catch(const std::exception& e) {
 		std::cerr << "Exception: " << e.what() << std::endl;
