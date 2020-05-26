@@ -42,6 +42,7 @@ When linux-hunter is running:
 
 ## UI
 ![UI](https://raw.githubusercontent.com/Emanem/linux-hunter/master/pics/ui.jpg)
+
 The UI itself is relatively simple. The first row contains the version and timings, useful to observe performance of this app (with _wall_, _user_ and _system_ timings).
 
 The second row displays the MH:W session id (if any) and the owner of such session (player name).
