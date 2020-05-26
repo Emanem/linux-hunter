@@ -3,9 +3,15 @@
 
 #include <string>
 #include <ncurses.h>
+#include "timer.h"
 
 namespace ui {
-	struct data {
+	struct app_data {
+		const char*	version;
+		timer::cpu_ms	tm;
+	};
+
+	struct mhw_data {
 		struct player_info {
 			bool		used = false;
 			std::wstring	name;
@@ -25,7 +31,7 @@ namespace ui {
 
 		~window();
 
-		void draw(const char *version, const ui::data& d);
+		void draw(const app_data& ad, const mhw_data& d);
 	};
 }
 

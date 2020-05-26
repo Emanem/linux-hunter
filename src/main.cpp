@@ -24,6 +24,7 @@
 #include "memory.h"
 #include "ui.h"
 #include "events.h"
+#include "timer.h"
 
 // Useful links with the SmartHunter sources; note that
 // sir-wilhelm is the one up to date with most recent
@@ -137,7 +138,7 @@ namespace {
 
 namespace {
 	// try get player name
-	bool get_data_session(const memory::pattern& mp_Player, memory::browser& mb, ui::data& d) {
+	bool get_data_session(const memory::pattern& mp_Player, memory::browser& mb, ui::mhw_data& d) {
 		const auto	pnameptr = mb.load_effective_addr_rel(mp_Player.mem_location, true);
 		const auto	pnameaddr = mb.read_mem<uint32_t>(pnameptr, true);
 		// get session name (this should be UTF-8)...
@@ -146,7 +147,7 @@ namespace {
 		return true;
 	}
 	// try get player damage (need name too)
-	bool get_data_damage(const memory::pattern& mp_Player, const memory::pattern& mp_Damage, memory::browser& mb, ui::data& d) {
+	bool get_data_damage(const memory::pattern& mp_Player, const memory::pattern& mp_Damage, memory::browser& mb, ui::mhw_data& d) {
 		const auto	pnameptr = mb.load_effective_addr_rel(mp_Player.mem_location, true);
 		const auto	pnameaddr = mb.read_mem<uint32_t>(pnameptr, true);
 		const auto	pdmgroot = mb.load_effective_addr_rel(mp_Damage.mem_location, true);
@@ -168,8 +169,8 @@ namespace {
 		return true;
 	}
 
-	void get_data(const memory::pattern& mp_Player, const memory::pattern& mp_Damage, memory::browser& mb, ui::data& d) {
-		d = ui::data();
+	void get_data(const memory::pattern& mp_Player, const memory::pattern& mp_Damage, memory::browser& mb, ui::mhw_data& d) {
+		d = ui::mhw_data();
 		if(!get_data_session(mp_Player, mb, d))
 			return;
 		if(!get_data_damage(mp_Player, mp_Damage, mb, d))
@@ -260,14 +261,15 @@ int main(int argc, char *argv[]) {
 		if(-1 == p6.mem_location || -1 == p2.mem_location)
 			throw std::runtime_error("Can't find AoB for patterns::PlayerNameLinux and/or patterns::PlayerDamage");
 		// main loop
-		// TODO manage keyboards input
 		ui::window	w;
-		ui::data	d;
+		ui::app_data	ad{ VERSION, timer::cpu_ms()};
+		ui::mhw_data	mhwd;
 		bool		run = true;
 		keyb_proc	kp(run);
 		while(run) {
-			get_data(p6, p2, mb, d);
-			w.draw(VERSION, d);
+			timer::thread_tmr	tt(&ad.tm);
+			get_data(p6, p2, mb, mhwd);
+			w.draw(ad, mhwd);
 			while(!kp.do_io(1000));
 		}
 	} catch(const std::exception& e) {

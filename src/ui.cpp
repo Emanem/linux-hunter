@@ -24,7 +24,7 @@ ui::window::~window() {
 	endwin();
 }
 
-void ui::window::draw(const char* version, const ui::data& d) {
+void ui::window::draw(const app_data& ad, const mhw_data& d) {
 	clear();
 	char		buf[256]; // local buffer for strings
 	int 		row = 0, // number of terminal rows
@@ -53,7 +53,7 @@ void ui::window::draw(const char* version, const ui::data& d) {
 	{
 		int	xoffset = 0;
 		char	buf[256];
-		std::snprintf(buf, 24, "linux-hunter %s", version);
+		std::snprintf(buf, 24, "linux-hunter %s", ad.version);
 		mvprintw(base_row++, xoffset, "%-24s", buf);
 	}
 	// print main stats
