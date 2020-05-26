@@ -49,8 +49,9 @@ namespace memory {
 			std::string	debug_info;
 			uint8_t		*data;
 			ssize_t		data_sz;
+			bool		dirty;
 
-			mem_region(uint64_t b, uint64_t e, const std::string& d) : beg(b), end(e), debug_info(d), data((uint8_t*)std::malloc(e-b)), data_sz(e-b) {
+			mem_region(uint64_t b, uint64_t e, const std::string& d) : beg(b), end(e), debug_info(d), data((uint8_t*)std::malloc(e-b)), data_sz(e-b), dirty(true) {
 				if(!data)
 					throw std::runtime_error((std::string("Can't allocate mem_region (") + std::to_string(b) + "," + std::to_string(e) + ")").c_str());
 			}
@@ -69,6 +70,7 @@ namespace memory {
 		};
 
 		pid_t			pid_;
+		bool			dirty_opt_;
 		std::vector<mem_region>	all_regions_;
 
 		void snap_pid(void);
@@ -79,11 +81,13 @@ namespace memory {
 
 		void refresh_region(mem_region& r);
 	public:
-		browser(const pid_t p);
+		browser(const pid_t p, const bool dirty_opt);
 
 		~browser();
 
 		void snap(void);
+
+		void set_mem_dirty(void);
 
 		void store(const char* dir_name);
 		

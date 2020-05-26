@@ -50,30 +50,33 @@ namespace {
 }
 
 namespace {
-	const char*	VERSION = "0.0.2";
+	const char*	VERSION = "0.0.3";
 
 	// settings/options management
 	pid_t		mhw_pid = -1;
 	std::string	save_dir,
 			load_dir;
 	bool		debug_ptrs = false,
-			debug_all = false;
+			debug_all = false,
+			mem_dirty_opt = false;
 	size_t		refresh_interval = 1000;
 
 	void print_help(const char *prog, const char *version) {
 		std::cerr <<	"Usage: " << prog << " [options]\nExecutes linux-hunter " << version << "\n\n"
-				"-p, --mhw-pid p   Specifies which pid to scan memory for (usually main MH:W)\n"
-				"-s, --save dir    Captures the specified pid into directory 'dir' and quits\n"
-				"-l, --load dir    Loads the specified capture directory 'dir' and displays\n"
-				"                  info (static - useful for debugging)\n"
-				"    --debug-ptrs  Prints the main AoB (Array of Bytes) pointers (useful for debugging)\n"
-				"    --debug-all   Prints all the AoB (Array of Bytes) partial and full matches\n"
-				"                  (useful for analysing AoB) and quits; implies setting debug-ptrs\n"
-				"-r, --refresh i   Specifies what is the UI/stats refresh interval in ms (default 1000)\n"
-				"    --help        prints this help and exit\n\n"
+				"-p, --mhw-pid p     Specifies which pid to scan memory for (usually main MH:W)\n"
+				"-s, --save dir      Captures the specified pid into directory 'dir' and quits\n"
+				"-l, --load dir      Loads the specified capture directory 'dir' and displays\n"
+				"                    info (static - useful for debugging)\n"
+				"    --debug-ptrs    Prints the main AoB (Array of Bytes) pointers (useful for debugging)\n"
+				"    --debug-all     Prints all the AoB (Array of Bytes) partial and full matches\n"
+				"                    (useful for analysing AoB) and quits; implies setting debug-ptrs\n"
+				"    --mem-dirty-opt Enable optimization to load memory pages just once per refresh;\n"
+				"                    this should be slightly less accurate but uses less system time\n"
+				"-r, --refresh i     Specifies what is the UI/stats refresh interval in ms (default 1000)\n"
+				"    --help          prints this help and exit\n\n"
 				"When linux-hunter is running:\n\n"
-				"'q' or 'ESC'      Quits the application\n"
-				"'r'               Force a refresh\n"
+				"'q' or 'ESC'        Quits the application\n"
+				"'r'                 Force a refresh\n"
 		<< std::flush;
 	}
 
@@ -86,6 +89,7 @@ namespace {
 			{"load",		required_argument, 0,	'l'},
 			{"debug-ptrs",		no_argument,	   0,	0},
 			{"debug-all",		no_argument,	   0,	0},
+			{"mem-dirty-opt",	no_argument,	   0,	0},
 			{"refresh",		required_argument, 0,   'r'},
 			{0, 0, 0, 0}
 		};
@@ -109,6 +113,8 @@ namespace {
 					debug_ptrs = true;
 				} else if (!std::strcmp("debug-all", long_options[option_index].name)) {
 					debug_all = debug_ptrs = true;
+				} else if (!std::strcmp("mem-dirty-opt", long_options[option_index].name)) {
+					mem_dirty_opt = true;
 				}
 			} break;
 
@@ -228,7 +234,7 @@ int main(int argc, char *argv[]) {
 		if(!load_dir.empty() && !save_dir.empty())
 			throw std::runtime_error("Can't specify both 'load' and 'save' options");
 		// start here...
-		memory::browser	mb(mhw_pid);
+		memory::browser	mb(mhw_pid, mem_dirty_opt);
 		// if we're in load mode fill b
 		// with content from the disk
 		if(!load_dir.empty()) {
@@ -276,6 +282,7 @@ int main(int argc, char *argv[]) {
 		keyb_proc	kp(run);
 		while(run) {
 			timer::thread_tmr	tt(&ad.tm);
+			mb.set_mem_dirty();
 			get_data(p6, p2, mb, mhwd);
 			w.draw(ad, mhwd);
 			const auto		tm_get = tt.get_wall();

@@ -122,6 +122,7 @@ void memory::browser::snap_pid(void) {
 			std::cerr << "Region: " << v.debug_info << "coudln't be fully read: " << sz << " vs " << rv << std::endl;
 			v.data_sz = rv;
 		}
+		v.dirty = false;
 	}
 }
 
@@ -180,6 +181,8 @@ void memory::browser::verify_regions(void) {
 void memory::browser::refresh_region(mem_region& r) {
 	if(pid_ < 0)
 		return;
+	if(dirty_opt_ && !r.dirty)
+		return;
 
 	const ssize_t		sz = r.end - r.beg;
 	const struct iovec	local = { (void*)r.data, (size_t)sz },
@@ -193,9 +196,10 @@ void memory::browser::refresh_region(mem_region& r) {
 	if(sz != rv) {
 		r.data_sz = rv;
 	}
+	r.dirty = false;
 }
 
-memory::browser::browser(const pid_t p) : pid_(p) {
+memory::browser::browser(const pid_t p, const bool dirty_opt) : pid_(p), dirty_opt_(dirty_opt) {
 }
 
 memory::browser::~browser() {
@@ -204,6 +208,16 @@ memory::browser::~browser() {
 void memory::browser::snap(void) {
 	snap_pid();
 	verify_regions();
+}
+
+void memory::browser::set_mem_dirty(void) {
+	// don't execute the code
+	// in case we haven't enabled
+	// dirty_opt_
+	if(!dirty_opt_)
+		return;
+	for(auto& v: all_regions_)
+		v.dirty = true;
 }
 
 void memory::browser::store(const char* dir_name) {
