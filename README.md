@@ -40,11 +40,11 @@ Unforutnately looks like CAPCOM and/or wine/Proton are protecting memory, hence 
 
 ## How to build
 You need to have `libncursesw5-dev` installed to compile (on Ubuntu is `sudo apt install libncursesw5-dev`) and that's it.
-Once done, `make release` and you'll have your _linux-hunter_ running.
+Once done, `make release` and you'll have your _linux-hunter_ ready to be running.
 
 ## How to run
 Simply identify the MH:W _pid_, and then `sudo ./linux-hunter -p <pid>`. Press `Ctrl+C` to quit.
-There are some options to help out with debugging, if you use it I suppose you have compiled it yourself hence should have knowledge of such options.
+There are some options to help out with debugging, if you use it I suppose you have compiled it yourself hence should have knowledge of such options (you should have looked at the code by then).
 
 ## Credits
 This work couldn't have been possible w/o previous work of:

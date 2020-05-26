@@ -17,13 +17,13 @@
 
 #include <iostream>
 #include <sstream>
-#include <thread>
 #include <getopt.h>
 #include <cstring>
 #include "patterns.h"
 #include "offsets.h"
 #include "memory.h"
 #include "ui.h"
+#include "events.h"
 
 // Useful links with the SmartHunter sources; note that
 // sir-wilhelm is the one up to date with most recent
@@ -64,7 +64,9 @@ namespace {
 				"-l, --load dir    Loads the specified capture directory 'dir' and displays info (static - useful for debugging)\n"
 				"    --debug-ptrs  Prints the main AoB (Array of Bytes) pointers (useful for debugging)\n"
 				"    --help        prints this help and exit\n\n"
-				"Press 'q' or 'ESC' inside linux-hunter to quit\n"
+				"When linux-hunter is running:\n\n"
+				"'q' or 'ESC'      Quits the application\n"
+				"'r'               Force a refresh\n"
 		<< std::flush;
 	}
 
@@ -168,27 +170,34 @@ namespace {
 	}
 }
 
+namespace {
+	class keyb_proc : public events::fd_proc {
+		bool&	run_;
+	public:
+		keyb_proc(bool& r) : events::fd_proc(STDIN_FILENO), run_(r) {
+		}
+
+		virtual bool on_data(const char* p, const size_t sz) const {
+			for(size_t i = 0; i < sz; ++i) {
+				switch(p[i]) {
+				case 27: // ESC key
+				case 'q':
+					run_ = false;
+					return true;
+				case 'r':
+					return true;
+				default:
+					break;
+				}
+			}
+
+			return false;
+		}
+	};
+}
+
 int main(int argc, char *argv[]) {
 	try {
-		/*ui::window	w;
-		ui::data	d;
-		d.session_id = "Camw+P?+dNLP";
-		d.host_name = "Emetta";
-		d.players[0].used = true;
-		d.players[0].name = "Jomgor";
-		d.players[0].damage = 5909;
-		d.players[1].used = true;
-		d.players[1].name = "Shenanagins";
-		d.players[1].damage = 8736;
-		d.players[2].used = true;
-		d.players[2].name = "Emetta";
-		d.players[2].damage = 18266;
-		d.players[3].used = true;
-		d.players[3].name = "xyz";
-		d.players[3].damage = 6426;
-		w.draw(VERSION, d);
-		std::this_thread::sleep_for(std::chrono::milliseconds(5000));
-		return 0;*/
 		memory::pattern	p0(patterns::PlayerName),
 				p1(patterns::CurrentPlayerName),
 				p2(patterns::PlayerDamage),
@@ -244,10 +253,12 @@ int main(int argc, char *argv[]) {
 		// TODO manage keyboards input
 		ui::window	w;
 		ui::data	d;
-		while(true) {
+		bool		run = true;
+		keyb_proc	kp(run);
+		while(run) {
 			get_data(p6, p2, mb, d);
 			w.draw(VERSION, d);
-			std::this_thread::sleep_for(std::chrono::milliseconds(1000));
+			while(!kp.do_io(1000));
 		}
 	} catch(const std::exception& e) {
 		std::cerr << "Exception: " << e.what() << std::endl;
