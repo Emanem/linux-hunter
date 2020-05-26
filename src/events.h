@@ -22,7 +22,7 @@
 #include <sys/epoll.h>
 #include <unistd.h>
 #include <string.h>
-#include <chrono>
+#include "timer.h"
 
 // usually you want to use this class with
 // fd == STDIN_FILENO
@@ -53,10 +53,9 @@ namespace events {
 		// or when time timeout expires
 		bool do_io(const size_t msec_tmout) {
 			struct epoll_event	event = {0};
-			const auto		b_tp = std::chrono::high_resolution_clock::now();
+			const timer::wall_tmr	tm;
 			const int		fds = epoll_wait(efd_, &event, 1, msec_tmout);
-			const auto		e_tp = std::chrono::high_resolution_clock::now();
-			const size_t		msec_diff = std::chrono::duration_cast<std::chrono::milliseconds>(e_tp - b_tp).count(),
+			const size_t		msec_diff = tm.get(),
 						msec_todo = (msec_diff < msec_tmout) ? (msec_tmout - msec_diff) : 0;
 			if(0 == fds) return true;
 			else if (0 > fds) {
