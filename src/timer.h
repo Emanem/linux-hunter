@@ -49,6 +49,11 @@ namespace timer {
 				throw std::runtime_error("getrusage failed");
 		}
 
+		size_t get_wall(void) const {
+			const auto	end = std::chrono::high_resolution_clock::now();
+			return std::chrono::duration_cast<std::chrono::milliseconds>(end - beg_).count();
+		}
+
 		cpu_ms get(void) const {
 			cpu_ms		rv;
 			const auto	end = std::chrono::high_resolution_clock::now();

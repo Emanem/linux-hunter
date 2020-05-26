@@ -278,7 +278,9 @@ int main(int argc, char *argv[]) {
 			timer::thread_tmr	tt(&ad.tm);
 			get_data(p6, p2, mb, mhwd);
 			w.draw(ad, mhwd);
-			while(!kp.do_io(refresh_interval));
+			const auto		tm_get = tt.get_wall();
+			const size_t		cur_refresh_tm = (refresh_interval > tm_get) ? (refresh_interval-tm_get) : 0;
+			while(!kp.do_io(cur_refresh_tm));
 		}
 	} catch(const std::exception& e) {
 		std::cerr << "Exception: " << e.what() << std::endl;
