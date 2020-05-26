@@ -73,7 +73,7 @@ namespace memory {
 
 		void snap_pid(void);
 
-		ssize_t find_once(const pattern& p, const uint8_t* buf, const size_t sz, pbyte& hint) const;
+		ssize_t find_once(const pattern& p, const uint8_t* buf, const size_t sz, pbyte& hint, const bool debug_all) const;
 
 		void verify_regions(void);
 
@@ -89,7 +89,7 @@ namespace memory {
 		
 		void load(const char* dir_name);
 
-		ssize_t find_first(const pattern& p, const size_t start_addr = 0);
+		ssize_t find_first(const pattern& p, const bool debug_all, const size_t start_addr = 0);
 
 		template<typename T>
 		T read_mem(const size_t addr, const bool refresh = false) {

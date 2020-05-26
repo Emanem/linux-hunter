@@ -49,20 +49,24 @@ namespace {
 }
 
 namespace {
-	const char*	VERSION = "0.0.1";
+	const char*	VERSION = "0.0.2";
 
 	// settings/options management
 	pid_t		mhw_pid = -1;
 	std::string	save_dir,
 			load_dir;
-	bool		debug_ptrs = false;
+	bool		debug_ptrs = false,
+			debug_all = false;
 
 	void print_help(const char *prog, const char *version) {
 		std::cerr <<	"Usage: " << prog << " [options]\nExecutes linux-hunter " << version << "\n\n"
 				"-p, --mhw-pid p   Specifies which pid to scan memory for (usually main MH:W)\n"
 				"-s, --save dir    Captures the specified pid into directory 'dir' and quits\n"
-				"-l, --load dir    Loads the specified capture directory 'dir' and displays info (static - useful for debugging)\n"
+				"-l, --load dir    Loads the specified capture directory 'dir' and displays\n"
+				"                  info (static - useful for debugging)\n"
 				"    --debug-ptrs  Prints the main AoB (Array of Bytes) pointers (useful for debugging)\n"
+				"    --debug-all   Prints all the AoB (Array of Bytes) partial and full matches\n"
+				"                  (useful for analysing AoB) and quits; implies setting debug-ptrs\n"
 				"    --help        prints this help and exit\n\n"
 				"When linux-hunter is running:\n\n"
 				"'q' or 'ESC'      Quits the application\n"
@@ -78,6 +82,7 @@ namespace {
 			{"save",		required_argument, 0,	's'},
 			{"load",		required_argument, 0,	'l'},
 			{"debug-ptrs",		no_argument,	   0,	0},
+			{"debug-all",		no_argument,	   0,	0},
 			{0, 0, 0, 0}
 		};
 
@@ -98,6 +103,8 @@ namespace {
 					std::exit(0);
 				} else if (!std::strcmp("debug-ptrs", long_options[option_index].name)) {
 					debug_ptrs = true;
+				} else if (!std::strcmp("debug-all", long_options[option_index].name)) {
+					debug_all = debug_ptrs = true;
 				}
 			} break;
 
@@ -232,7 +239,7 @@ int main(int argc, char *argv[]) {
 		// print out basic patterns
 		std::cerr << "Finding main AoB entry points..." << std::endl;
 		for(auto p : p_vec) {
-			p->mem_location = mb.find_first(*p);
+			p->mem_location = mb.find_first(*p, debug_all);
 			if(debug_ptrs) {
 				/*
 				 * This code is used to ensure the read_mem was
@@ -247,6 +254,9 @@ int main(int argc, char *argv[]) {
 			}
 		}
 		std::cerr << "Done" << std::endl;
+		// quit at this stage in case we have set the flag debug-all
+		if(debug_all)
+			return 0;
 		if(-1 == p6.mem_location || -1 == p2.mem_location)
 			throw std::runtime_error("Can't find AoB for patterns::PlayerNameLinux and/or patterns::PlayerDamage");
 		// main loop

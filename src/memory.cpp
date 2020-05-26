@@ -125,7 +125,7 @@ void memory::browser::snap_pid(void) {
 	}
 }
 
-ssize_t memory::browser::find_once(const pattern& p, const uint8_t* buf, const size_t sz, pbyte& hint) const {
+ssize_t memory::browser::find_once(const pattern& p, const uint8_t* buf, const size_t sz, pbyte& hint, const bool debug_all) const {
 	bool		first = true;
 	const uint8_t	*p_buf = 0;
 	for(const auto& i : p.matches) {
@@ -137,6 +137,13 @@ ssize_t memory::browser::find_once(const pattern& p, const uint8_t* buf, const s
 			} else {
 				hint = buf;
 				first = false;
+				if(debug_all) {
+					const int	len = p.matches.rbegin()->tgt_offset + p.matches.rbegin()->length;
+					for(int j = 0; j < len; ++j) {
+						std::printf("%02X ", p_buf[j]);
+					}
+					std::printf("\n");
+				}
 			}
 		} else {
 			// simple comparisons here
@@ -146,12 +153,6 @@ ssize_t memory::browser::find_once(const pattern& p, const uint8_t* buf, const s
 			}
 		}
 	}
-	// print out the buffer for reference
-	/*const int	len = p.matches.rbegin()->tgt_offset + p.matches.rbegin()->length;
-	for(int j = 0; j < len; ++j) {
-		std::printf("%02X ", p_buf[j]);
-	}
-	std::printf("\n");*/
 	return p_buf - buf;
 }
 
@@ -267,7 +268,7 @@ void memory::browser::load(const char* dir_name) {
 	verify_regions();
 }
 
-ssize_t memory::browser::find_first(const pattern& p, const size_t start_addr) {
+ssize_t memory::browser::find_first(const pattern& p, const bool debug_all, const size_t start_addr) {
 	for(const auto& v : all_regions_) {
 		if(v.end <= start_addr)
 			continue;
@@ -275,7 +276,7 @@ ssize_t memory::browser::find_first(const pattern& p, const size_t start_addr) {
 				*p_hint = 0;
 		size_t		p_size = v.data_sz;
 		while(true) {
-			const auto	rs = find_once(p, p_buf, p_size, p_hint);
+			const auto	rs = find_once(p, p_buf, p_size, p_hint, debug_all);
 			const ssize_t	hint_diff = p_hint - v.data;
 			if(rs >= 0)
 				return rs + hint_diff + v.beg;
