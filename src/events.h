@@ -56,11 +56,12 @@ namespace events {
 			const auto		b_tp = std::chrono::high_resolution_clock::now();
 			const int		fds = epoll_wait(efd_, &event, 1, msec_tmout);
 			const auto		e_tp = std::chrono::high_resolution_clock::now();
-			const size_t		msec_diff = std::chrono::duration_cast<std::chrono::milliseconds>(e_tp - b_tp).count();
+			const size_t		msec_diff = std::chrono::duration_cast<std::chrono::milliseconds>(e_tp - b_tp).count(),
+						msec_todo = (msec_diff < msec_tmout) ? (msec_tmout - msec_diff) : 0;
 			if(0 == fds) return true;
 			else if (0 > fds) {
 				if(EINTR == errno) {
-					if(msec_diff) return do_io(msec_diff);
+					if(msec_todo) return do_io(msec_todo);
 					else return true;
 				}
 				throw std::runtime_error((std::string("Error in epoll_wait: ") + strerror(errno)).c_str());
@@ -72,8 +73,8 @@ namespace events {
             			const int	rb = read(fd_, &buf, 128);
 				if(rb > 0) {
 					 const auto rv = on_data(buf, rb);
-					 if(rv || !msec_diff) return true;
-					 else return do_io(msec_diff);
+					 if(rv || !msec_todo) return true;
+					 else return do_io(msec_todo);
 				} else throw std::runtime_error((std::string("Error in reading fd: ") + strerror(errno)).c_str());
 			}
 			// we should never hit this case
