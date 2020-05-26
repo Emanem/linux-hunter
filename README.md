@@ -3,6 +3,8 @@ Prototype MH:W companion app for Linux, inspired by SmartHunter.
 
 ## Table of Contents
 
+* [Usage](#usage)
+* [UI](#ui)
 * [Screenshots](#screenshots)
 * [Status](#status)
 * [Linux differences](#linux-differences)
@@ -12,6 +14,39 @@ Prototype MH:W companion app for Linux, inspired by SmartHunter.
 * [How to build](#how-to-build)
 * [How to run](#how-to-run)
 * [Credits](#credits)
+
+## Usage
+Running the application as `./linux-hunter --help` will produce the following:
+```
+Usage: ./linux-hunter [options]
+Executes linux-hunter 0.0.3
+
+-p, --mhw-pid p     Specifies which pid to scan memory for (usually main MH:W)
+-s, --save dir      Captures the specified pid into directory 'dir' and quits
+-l, --load dir      Loads the specified capture directory 'dir' and displays
+                    info (static - useful for debugging)
+    --debug-ptrs    Prints the main AoB (Array of Bytes) pointers (useful for debugging)
+    --debug-all     Prints all the AoB (Array of Bytes) partial and full matches
+                    (useful for analysing AoB) and quits; implies setting debug-ptrs
+    --mem-dirty-opt Enable optimization to load memory pages just once per refresh;
+                    this should be slightly less accurate but uses less system time
+-r, --refresh i     Specifies what is the UI/stats refresh interval in ms (default 1000)
+    --help          prints this help and exit
+
+When linux-hunter is running:
+
+'q' or 'ESC'        Quits the application
+'r'                 Force a refresh
+
+```
+
+## UI
+![UI](https://raw.githubusercontent.com/Emanem/linux-hunter/master/pics/ui.jpg)
+The UI itself is relatively simple. The first row contains the version and timings, useful to observe performance of this app (with _wall_, _user_ and _system_ timings).
+
+The second row displays the MH:W session id (if any) and the owner of such session (player name).
+
+The following rows will represent the players and the absolute/relative damage (currently they may display _NaN_ when not in a hunt).
 
 ## Screenshots
 
@@ -43,8 +78,10 @@ You need to have `libncursesw5-dev` installed to compile (on Ubuntu is `sudo apt
 Once done, `make release` and you'll have your _linux-hunter_ ready to be running.
 
 ## How to run
-Simply identify the MH:W _pid_, and then `sudo ./linux-hunter -p <pid>`. Press `Ctrl+C` to quit.
-There are some options to help out with debugging, if you use it I suppose you have compiled it yourself hence should have knowledge of such options (you should have looked at the code by then).
+Simply identify the MH:W _pid_, and then `sudo ./linux-hunter -p <pid>`; press `Esc` or `q` to quit.
+Running with experimental option `--mem-dirty-opt` should reduce the performance impact by limiting scanning memory (on i7-8700k the CPU usage went from 9% to 2%) - but the stats per player may be slightly inaccurate (i.e. may be refreshes late).
+
+There are some options to help out with debugging (such as `--debug-ptrs` and `--debug-all`), if you use those I suppose you have compiled it yourself hence should have knowledge of such options (you should have looked at the code by then).
 
 ## Credits
 This work couldn't have been possible w/o previous work of:
