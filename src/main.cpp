@@ -229,13 +229,13 @@ int main(int argc, char *argv[]) {
 		// quit at this stage in case we have set the flag debug-all
 		if(debug_all)
 			return 0;
-		if(-1 == p6.mem_location || -1 == p2.mem_location)
-			throw std::runtime_error("Can't find AoB for patterns::PlayerNameLinux and/or patterns::PlayerDamage");
+		if(-1 == p6.mem_location || -1 == p2.mem_location || -1 == p3.mem_location)
+			throw std::runtime_error("Can't find AoB for patterns::PlayerNameLinux and/or patterns::PlayerDamage and/or patterns::Monster");
 		// main loop
 		ui::window			w;
 		ui::app_data			ad{ VERSION, timer::cpu_ms()};
 		ui::mhw_data			mhwd;
-		mhw_lookup::pattern_data	mhwpd{ &p6, &p2 };
+		mhw_lookup::pattern_data	mhwpd{ &p6, &p2, &p3 };
 		bool				run = true;
 		keyb_proc			kp(run);
 		while(run) {

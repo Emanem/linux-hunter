@@ -40,6 +40,23 @@ namespace offsets {
 					NextPlayerPtr = 0x58,
 					Damage = 0x48;
 	}
+
+	namespace Monster {
+		const static uint32_t	PreviousMonsterOffset = 0x10,
+					NextMonsterOffset = 0x18,
+					MonsterStartOfStructOffset = 0x40,
+					MonsterHealthComponentOffset = 0x7670;
+	}
+
+	namespace MonsterModel {
+		const static uint32_t	IdLength = 32, // 64?
+					IdOffset = 0x179;
+	}
+
+	namespace MonsterHealthComponent {
+		const static uint32_t	MaxHealth = 0x60,
+					CurrentHealth = 0x64;
+	}
 }
 
 #endif //_OFFSETS_H_
