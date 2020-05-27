@@ -110,7 +110,7 @@ namespace memory {
 					throw std::runtime_error("Can't interpret memory, T size too large");
 				return *(T*)&v.data[addr - v.beg];
 			}
-			throw std::runtime_error("Coudln't find specified address");
+			throw std::runtime_error("Couldn't find specified address");
 		}
 
 		std::wstring read_utf8(const size_t addr, const size_t len, const bool refresh = false);

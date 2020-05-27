@@ -19,9 +19,17 @@ namespace ui {
 
 		};
 
+		struct monster_info {
+			bool		used = false;
+			const char*	name = 0;
+			float		hp_total = -1.0,
+					hp_current = -1.0;
+		};
+
 		std::wstring	session_id,
 				host_name;
 		player_info	players[4];
+		monster_info	monsters[8];
 	};
 
 	class window {

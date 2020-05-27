@@ -335,7 +335,7 @@ std::wstring memory::browser::read_utf8(const size_t addr, const size_t len, con
 		const char*	utf8_ptr = (const char*)&v.data[addr - v.beg];
 		return from_utf8(utf8_ptr, len);
 	}
-	throw std::runtime_error("Coudln't find specified address");
+	throw std::runtime_error("Couldn't find specified address");
 }
 
 size_t memory::browser::load_effective_addr_rel(const size_t addr, const bool refresh) {
@@ -357,6 +357,8 @@ size_t memory::browser::load_multilevel_addr_rel(const size_t addr, const uint32
 	size_t	rv = addr;
 	for(auto i = off_b; i != off_e; ++i) {
 		const auto	cur_rv = read_mem<size_t>(rv, refresh);
+		if(!cur_rv)
+			return 0;
 		rv = (size_t)((int64_t)(cur_rv) + *i);
 
 	}
