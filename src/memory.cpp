@@ -357,7 +357,7 @@ size_t memory::browser::load_multilevel_addr_rel(const size_t addr, const uint32
 	size_t	rv = addr;
 	for(auto i = off_b; i != off_e; ++i) {
 		const auto	cur_rv = read_mem<size_t>(rv, refresh);
-		rv = (uint32_t)(cur_rv) + *i;
+		rv = (size_t)((int64_t)(cur_rv) + *i);
 
 	}
 	return rv;
