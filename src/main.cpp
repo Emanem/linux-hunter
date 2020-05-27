@@ -19,12 +19,11 @@
 #include <sstream>
 #include <getopt.h>
 #include <cstring>
-#include "patterns.h"
-#include "offsets.h"
 #include "memory.h"
 #include "ui.h"
 #include "events.h"
 #include "timer.h"
+#include "mhw_lookup.h"
 
 // Useful links with the SmartHunter sources; note that
 // sir-wilhelm is the one up to date with most recent
@@ -151,48 +150,6 @@ namespace {
 }
 
 namespace {
-	// try get player name
-	bool get_data_session(const memory::pattern& mp_Player, memory::browser& mb, ui::mhw_data& d) {
-		const auto	pnameptr = mb.load_effective_addr_rel(mp_Player.mem_location, true);
-		const auto	pnameaddr = mb.read_mem<uint32_t>(pnameptr, true);
-		// get session name (this should be UTF-8)...
-		d.session_id = mb.read_utf8(pnameaddr + offsets::PlayerNameCollection::SessionID, offsets::PlayerNameCollection::IDLength, true);
-		d.host_name = mb.read_utf8(pnameaddr + offsets::PlayerNameCollection::SessionHostPlayerName, offsets::PlayerNameCollection::PlayerNameLength, true);
-		return true;
-	}
-	// try get player damage (need name too)
-	bool get_data_damage(const memory::pattern& mp_Player, const memory::pattern& mp_Damage, memory::browser& mb, ui::mhw_data& d) {
-		const auto	pnameptr = mb.load_effective_addr_rel(mp_Player.mem_location, true);
-		const auto	pnameaddr = mb.read_mem<uint32_t>(pnameptr, true);
-		const auto	pdmgroot = mb.load_effective_addr_rel(mp_Damage.mem_location, true);
-		const uint32_t	pdmgml[] = { offsets::PlayerDamageCollection::FirstPlayerPtr + (offsets::PlayerDamageCollection::MaxPlayerCount * sizeof(size_t) * offsets::PlayerDamageCollection::NextPlayerPtr ) };
-		const auto	pdmglistaddr = mb.load_multilevel_addr_rel(pdmgroot, &pdmgml[0], &pdmgml[1], true);
-		// for each player...
-		for(uint32_t i = 0; i < offsets::PlayerDamageCollection::MaxPlayerCount; ++i) {
-			// not sure why, but on Linux the offset has 1 more byte for each entry...
-			const auto	pnameoffset = offsets::PlayerNameCollection::PlayerNameLength * i + i*1;
-			d.players[i].name = mb.read_utf8(pnameaddr + offsets::PlayerNameCollection::FirstPlayerName + pnameoffset, offsets::PlayerNameCollection::PlayerNameLength, true);
-			d.players[i].used = !d.players[i].name.empty();
-			if(!d.players[i].used)
-				continue;
-			const auto	pfirstplayer = pdmglistaddr + offsets::PlayerDamageCollection::FirstPlayerPtr;
-			const auto	pcurplayer = pfirstplayer + offsets::PlayerDamageCollection::NextPlayerPtr * i;
-			const auto	curplayeraddr = mb.read_mem<size_t>(pcurplayer, true);
-			d.players[i].damage = mb.read_mem<int32_t>(curplayeraddr + offsets::PlayerDamageCollection::Damage, true);
-		}
-		return true;
-	}
-
-	void get_data(const memory::pattern& mp_Player, const memory::pattern& mp_Damage, memory::browser& mb, ui::mhw_data& d) {
-		d = ui::mhw_data();
-		if(!get_data_session(mp_Player, mb, d))
-			return;
-		if(!get_data_damage(mp_Player, mp_Damage, mb, d))
-			return;
-	}
-}
-
-namespace {
 	class keyb_proc : public events::fd_proc {
 		bool&	run_;
 	public:
@@ -275,15 +232,16 @@ int main(int argc, char *argv[]) {
 		if(-1 == p6.mem_location || -1 == p2.mem_location)
 			throw std::runtime_error("Can't find AoB for patterns::PlayerNameLinux and/or patterns::PlayerDamage");
 		// main loop
-		ui::window	w;
-		ui::app_data	ad{ VERSION, timer::cpu_ms()};
-		ui::mhw_data	mhwd;
-		bool		run = true;
-		keyb_proc	kp(run);
+		ui::window			w;
+		ui::app_data			ad{ VERSION, timer::cpu_ms()};
+		ui::mhw_data			mhwd;
+		mhw_lookup::pattern_data	mhwpd{ &p6, &p2 };
+		bool				run = true;
+		keyb_proc			kp(run);
 		while(run) {
 			timer::thread_tmr	tt(&ad.tm);
 			mb.set_mem_dirty();
-			get_data(p6, p2, mb, mhwd);
+			mhw_lookup::get_data(mhwpd, mb, mhwd);
 			w.draw(ad, mhwd);
 			const auto		tm_get = tt.get_wall();
 			const size_t		cur_refresh_tm = (refresh_interval > tm_get) ? (refresh_interval-tm_get) : 0;
