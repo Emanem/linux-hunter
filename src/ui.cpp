@@ -1,4 +1,6 @@
 #include "ui.h"
+#include <cstring>
+#include <cctype>
 
 namespace {
 	int PLAYER_COLORS[] = { 1, 2, 3, 4 };
@@ -31,8 +33,8 @@ void ui::window::draw(const app_data& ad, const mhw_data& d) {
         		col = 0; // number of terminal columns
         getmaxyx(stdscr, row, col);      /* find the boundaries of the screeen */
 	// TODO check we have enough space to display
-	if(col < 64 || row < 10) {
-		mvprintw(0, 0, "Need at least a screen of 64x10 (%d/%d)", col, row);
+	if(col < 64 || row < 15) {
+		mvprintw(0, 0, "Need at least a screen of 64x15 (%d/%d)", col, row);
 		refresh();
 		return;
 	}
@@ -52,7 +54,6 @@ void ui::window::draw(const app_data& ad, const mhw_data& d) {
 	int	base_row = 0;
 	{
 		int	xoffset = 0;
-		char	buf[256];
 		std::snprintf(buf, 256, "linux-hunter %s              (%4ld/%4ld/%4ld w/u/s)", ad.version, ad.tm.wall, ad.tm.user, ad.tm.system);
 		mvprintw(base_row++, xoffset, "%-64s", buf);
 	}
@@ -106,6 +107,27 @@ void ui::window::draw(const app_data& ad, const mhw_data& d) {
 		attron(A_BOLD);
 		mvprintw(base_row++, 0, "%-32s%-4s%10d%8s", "Total", "", total_damage, "100.00");
 		attroff(A_BOLD);
+	}
+	base_row++;
+	// then Monsters - first header
+	{
+		attron(A_REVERSE);
+		mvprintw(base_row++, 0, "%-32s%-14s%-8s", "Monster Name", "HP", "%");
+		attroff(A_REVERSE);
+	}
+	// print the monster data
+	const int	max_monsters = sizeof(d.monsters)/sizeof(d.monsters[0]);
+	int		cur_monster = 0;
+	while((base_row < row) && (cur_monster < max_monsters)) {
+		const mhw_data::monster_info&	mi = d.monsters[cur_monster];
+		if(!mi.used) {
+			++cur_monster;
+			continue;
+		}
+		if(mi.hp_current <= 0.001) attron(A_DIM);
+		mvprintw(base_row++, 0, "%-32s %6d/%6d%8.2f", mi.name, (int)mi.hp_current, (int)mi.hp_total, 100.0*mi.hp_current/mi.hp_total);
+		if(mi.hp_current <= 0.001) attroff(A_DIM);
+		++cur_monster;
 	}
 	refresh();
 }
