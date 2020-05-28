@@ -79,15 +79,28 @@ When reading the players' names I have to [add one byte](https://github.com/Eman
 ### Wine Complexities
 I've also reached out to wine SMEs asking about the efforts of creating/porting such compation software. Their feedback has been:
 ```
-What you are doing here is very fragile, even going from Windows to Windows. I realize it is a common thing to do for game mods though if the game does not provide an API for such modifications.
+What you are doing here is very fragile, even going from Windows to Windows. I realize it is a common thing
+to do for game mods though if the game does not provide an API for such modifications.
 
-How reliably memory patterns are replicated between Wine and Windows and even two different Windows versions depends on how the allocations are made. If you are looking up pointers into the game's code in its DLLs and EXE files they are very similar because the PE file is mmap'ed into the processes' address space. You have good chances of the absolute addresses to be identical.
+How reliably memory patterns are replicated between Wine and Windows and even two different Windows versions
+depends on how the allocations are made. If you are looking up pointers into the game's code in its DLLs and
+EXE files they are very similar because the PE file is mmap'ed into the processes' address space. You have 
+good chances of the absolute addresses to be identical.
 
-If the game allocates a big blob of Heap memory in one go and fills it with data you should also be lucky. If there are multiple independent heap allocations done by the game the patterns will start to look differently. Wine will not allocate smaller memory blobs than requested, but a heap allocation may be slightly larger, placed in different areas of the address space, etc. The exact details not only depend on Wine, but also on the Linux kernel, linux libs etc.
+If the game allocates a big blob of Heap memory in one go and fills it with data you should also be lucky.
+If there are multiple independent heap allocations done by the game the patterns will start to look 
+differently. Wine will not allocate smaller memory blobs than requested, but a heap allocation may be 
+slightly larger, placed in different areas of the address space, etc. The exact details not only depend on
+Wine, but also on the Linux kernel, linux libs etc.
 
-Things will get even more spotty if the actual memory allocations are done by some Windows API functions. I don't know the string APIs in detail, so the following example is just a hypothetical one: If the game loads data from an XML file we pass the heavy lifting to the Linux libxml2 library. Its internal workings are different from microsoft's msxml.dll so the layout of the loaded file will not look alike at all.
+Things will get even more spotty if the actual memory allocations are done by some Windows API functions.
+I don't know the string APIs in detail, so the following example is just a hypothetical one: If the game
+loads data from an XML file we pass the heavy lifting to the Linux libxml2 library. Its internal workings
+are different from microsoft's msxml.dll so the layout of the loaded file will not look alike at all.
 
-You can try to look into some observable allocation properties with functions like HeapSize and VirtualQuery. One thing worth exploring is finding memory allocations not by searching for magic patterns in memory but hooking functions that the game uses to load the data. It may or may not work better.
+You can try to look into some observable allocation properties with functions like HeapSize and 
+VirtualQuery. One thing worth exploring is finding memory allocations not by searching for magic patterns
+in memory but hooking functions that the game uses to load the data. It may or may not work better.
 ```
 
 ## Root access
