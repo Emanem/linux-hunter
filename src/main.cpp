@@ -252,7 +252,7 @@ int main(int argc, char *argv[]) {
 		keyb_proc			kp(run);
 		while(run) {
 			timer::thread_tmr	tt(&ad.tm);
-			mb.set_mem_dirty();
+			mb.update();
 			mhw_lookup::get_data(mhwpd, mb, mhwd);
 			w.draw(draw_flags, ad, mhwd);
 			const auto		tm_get = tt.get_wall();

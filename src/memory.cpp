@@ -77,11 +77,8 @@ void memory::pattern::print(std::ostream& ostr) {
 	}
 }
 
-void memory::browser::snap_pid(void) {
-	if(pid_ < 0)
-		throw std::runtime_error((std::string("Can't snap invalid pid (" + std::to_string(pid_) + ")")).c_str());
-
-	all_regions_.clear();
+void memory::browser::snap_mem_regions(std::vector<mem_region>& mr, const bool alloc_mem) {
+	mr.clear();
 	/* example :
 	* 5662e000-56a21000 r-xp 00000000 08:16 29098197                           /home/ema/.steam/ubuntu12_32/steam
 	* 56a21000-56a36000 r--p 003f3000 08:16 29098197                           /home/ema/.steam/ubuntu12_32/steam
@@ -105,9 +102,15 @@ void memory::browser::snap_pid(void) {
 				device[32];
 		const auto rv = std::sscanf(line.c_str(), "%lx-%lx %s %lx %s %li", &beg, &end, permissions, &offset, device, &inode);
 		if(rv == 6 && !inode && permissions[0] == 'r')
-			all_regions_.push_back(mem_region(beg, end, line));
+			mr.push_back(mem_region(beg, end, line, alloc_mem));
 	}
+}
 
+void memory::browser::snap_pid(void) {
+	if(pid_ < 0)
+		throw std::runtime_error((std::string("Can't snap invalid pid (" + std::to_string(pid_) + ")")).c_str());
+
+	snap_mem_regions(all_regions_, true);
 	for(auto& v : all_regions_) {
 		const ssize_t		sz = v.end - v.beg;
 		const struct iovec	local = { (void*)v.data, (size_t)sz },
@@ -124,6 +127,45 @@ void memory::browser::snap_pid(void) {
 		}
 		v.dirty = false;
 	}
+}
+
+void memory::browser::update_regions(void) {
+	if(-1 == pid_)
+		return;
+	std::vector<mem_region>	new_regions;
+	new_regions.reserve(all_regions_.size()*2);
+	// get them w/o allocating memory
+	snap_mem_regions(new_regions, false);
+	// then merge the current into new (if possible)
+	// regions are supposed to be sorted, so that
+	// below algorithm should be O(N) instead of
+	// O(N^2)
+	size_t hint = 0;
+	for(auto& r : new_regions) {
+		// lookup the same in the current regions
+		// using the hint
+		size_t	idx = 0;
+		for(idx = hint; idx < all_regions_.size(); ++idx) {
+			mem_region&	cur_r = all_regions_[idx];
+			// if we have match 'move' the region
+			// content
+			if((cur_r.beg == r.beg) && (cur_r.end == r.end)) {
+				r = std::move(cur_r);
+				hint = idx+1;
+				break;
+			}
+		}
+		// if we don't have 'data' member initilized
+		// allocate memory - this is expensive
+		// hopefully doesn't happen frequently
+		if(!r.data) {
+			r.data = (uint8_t*)std::malloc(r.end-r.beg);
+			if(!r.data)
+				throw std::runtime_error((std::string("Can't allocate mem_region (") + std::to_string(r.beg) + "," + std::to_string(r.end) + ")").c_str());
+		}
+	}
+	// finally, swap vectors
+	all_regions_.swap(new_regions);
 }
 
 ssize_t memory::browser::find_once(const pattern& p, const uint8_t* buf, const size_t sz, pbyte& hint, const bool debug_all) const {
@@ -210,7 +252,11 @@ void memory::browser::snap(void) {
 	verify_regions();
 }
 
-void memory::browser::set_mem_dirty(void) {
+void memory::browser::update(void) {
+	// need to check memory layout
+	// usually shouldn't change much
+	// but it _does_ sometime
+	update_regions();
 	// don't execute the code
 	// in case we haven't enabled
 	// dirty_opt_
@@ -266,7 +312,7 @@ void memory::browser::load(const char* dir_name) {
 	std::sort(mem_files.begin(), mem_files.end(), [](const mem_data& lhs, const mem_data& rhs) -> bool { return lhs.file < rhs.file; } );
 	all_regions_.clear();
 	for(const auto& i : mem_files) {
-		all_regions_.push_back(mem_region(i.beg, i.end, i.file));
+		all_regions_.push_back(mem_region(i.beg, i.end, i.file, true));
 		auto& latest_reg = *all_regions_.rbegin();
 		// load data
 		std::ifstream	istr((std::string(dir_name) + "/" + i.file).c_str(), std::ios_base::binary);
