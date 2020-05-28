@@ -96,7 +96,7 @@ namespace memory {
 		ssize_t find_first(const pattern& p, const bool debug_all, const size_t start_addr = 0);
 
 		template<typename T>
-		T read_mem(const size_t addr, const bool refresh = false) {
+		bool safe_read_mem(const size_t addr, T& out, const bool refresh = false) {
 			// pre-condition: all_regions_ is
 			// actually correctly formatted
 			// addr between boundaries is _not_
@@ -107,10 +107,25 @@ namespace memory {
 				if(refresh)
 					refresh_region(v);
 				if(addr + sizeof(T) > (v.data_sz + v.beg))
-					throw std::runtime_error("Can't interpret memory, T size too large");
-				return *(T*)&v.data[addr - v.beg];
+					return false;
+				out = *(T*)&v.data[addr - v.beg];
+				return true;
 			}
-			throw std::runtime_error("Couldn't find specified address");
+			return false;
+		}
+
+		bool safe_read_utf8(const size_t addr, const size_t len, std::wstring& out, const bool refresh = false);
+
+		bool safe_load_effective_addr_rel(const size_t addr, size_t& out, const bool refresh = false);
+
+		bool safe_load_multilevel_addr_rel(const size_t addr, const uint32_t* off_b, const uint32_t* off_e, size_t& out, const bool refresh = false);
+
+		template<typename T>
+		T read_mem(const size_t addr, const bool refresh = false) {
+			T	rv;
+			if(!safe_read_mem<T>(addr, rv, refresh))
+				throw std::runtime_error("Couldn't find specified address");
+			return rv;
 		}
 
 		std::wstring read_utf8(const size_t addr, const size_t len, const bool refresh = false);

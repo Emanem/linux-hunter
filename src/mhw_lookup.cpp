@@ -74,7 +74,7 @@ namespace {
 	bool get_data_single_monster(const size_t maddr, memory::browser& mb, ui::mhw_data::monster_info& m) {
 		const auto	realmaddr = maddr + offsets::Monster::MonsterStartOfStructOffset + offsets::Monster::MonsterHealthComponentOffset;
 		const auto	hcompaddr = mb.read_mem<size_t>(realmaddr, true);
-		const auto	id = mb.read_utf8(realmaddr + offsets::MonsterModel::IdOffset, offsets::MonsterModel::IdLength);
+		const auto	id = mb.read_utf8(realmaddr + offsets::MonsterModel::IdOffset, offsets::MonsterModel::IdLength, true);
 		//std::wcout << "maddr: " << maddr << "\t[" << id << "]" << std::endl;
 		// according to SmartHunter, we need ot split the id string
 		// by '\' and the last sub-string the the real monster Id
@@ -97,7 +97,9 @@ namespace {
 	bool get_data_monster(const memory::pattern* monster, memory::browser& mb, ui::mhw_data& d) {
 		const auto	mrootptr = mb.load_effective_addr_rel(monster->mem_location, true) - 0x36CE0;
 		const uint32_t	mlistlookup[] = { 0x128, 0x8, 0x0 };
-		const auto	mbaselist = mb.load_multilevel_addr_rel(mrootptr, &mlistlookup[0], &mlistlookup[3], true);
+		size_t		mbaselist = 0;
+		if(!mb.safe_load_multilevel_addr_rel(mrootptr, &mlistlookup[0], &mlistlookup[3], mbaselist, true))
+			return false;
 		// this also caters for mbaselist being 0
 		if(mbaselist < 0xffffff)
 			return false;

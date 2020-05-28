@@ -320,7 +320,7 @@ namespace {
 	}
 }
 
-std::wstring memory::browser::read_utf8(const size_t addr, const size_t len, const bool refresh) {
+bool memory::browser::safe_read_utf8(const size_t addr, const size_t len, std::wstring& out, const bool refresh) {
 	// pre-condition: all_regions_ is
 	// actually correctly formatted
 	// addr between boundaries is _not_
@@ -333,35 +333,63 @@ std::wstring memory::browser::read_utf8(const size_t addr, const size_t len, con
 		if(addr + len > (v.data_sz + v.beg))
 			throw std::runtime_error("Can't interpret memory, T size too large");
 		const char*	utf8_ptr = (const char*)&v.data[addr - v.beg];
-		return from_utf8(utf8_ptr, len);
+		out = from_utf8(utf8_ptr, len);
+		return true;
 	}
-	throw std::runtime_error("Couldn't find specified address");
+	return false;
 }
 
-size_t memory::browser::load_effective_addr_rel(const size_t addr, const bool refresh) {
+bool memory::browser::safe_load_effective_addr_rel(const size_t addr, size_t& out, const bool refresh) {
 	const int	opcodeLength = 3,
 			paramLength = 4,
 			instructionLength = opcodeLength + paramLength;
 
-	uint32_t operand = read_mem<uint32_t>(addr + opcodeLength, refresh);
+	uint32_t operand;
+	if(!safe_read_mem<uint32_t>(addr + opcodeLength, operand, refresh))
+		return false;
 	uint64_t operand64 = operand;
 
 	// 64 bit relative addressing 
 	if (operand64 > std::numeric_limits<int32_t>::max()) {
 		operand64 = 0xffffffff00000000 | operand64;
 	}
-	return addr + operand64 + instructionLength;
+	out = addr + operand64 + instructionLength;
+	return true;
 }
 
-size_t memory::browser::load_multilevel_addr_rel(const size_t addr, const uint32_t* off_b, const uint32_t* off_e, const bool refresh) {
+bool memory::browser::safe_load_multilevel_addr_rel(const size_t addr, const uint32_t* off_b, const uint32_t* off_e, size_t& out, const bool refresh) {
 	size_t	rv = addr;
 	for(auto i = off_b; i != off_e; ++i) {
-		const auto	cur_rv = read_mem<size_t>(rv, refresh);
+		size_t	cur_rv;
+		if(!safe_read_mem<size_t>(rv, cur_rv, refresh))
+			return false;
 		if(!cur_rv)
-			return 0;
+			return false;
 		rv = (size_t)((int64_t)(cur_rv) + *i);
 
 	}
+	out = rv;
+	return true;
+}
+
+std::wstring memory::browser::read_utf8(const size_t addr, const size_t len, const bool refresh) {
+	std::wstring	rv;
+	if(!safe_read_utf8(addr, len, rv, refresh))
+		throw std::runtime_error("Couldn't find specified address");
+	return rv;
+}
+
+size_t memory::browser::load_effective_addr_rel(const size_t addr, const bool refresh) {
+	size_t	out;
+	if(!safe_load_effective_addr_rel(addr, out, refresh))
+		throw std::runtime_error("Couldn't find specified address");
+	return out;
+}
+
+size_t memory::browser::load_multilevel_addr_rel(const size_t addr, const uint32_t* off_b, const uint32_t* off_e, const bool refresh) {
+	size_t	rv;
+	if(!safe_load_multilevel_addr_rel(addr, off_b, off_e, rv, refresh))
+		throw std::runtime_error("Couldn't find specified address");
 	return rv;
 }
 
