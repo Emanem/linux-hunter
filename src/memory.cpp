@@ -77,11 +77,8 @@ void memory::pattern::print(std::ostream& ostr) {
 	}
 }
 
-void memory::browser::snap_pid(void) {
-	if(pid_ < 0)
-		throw std::runtime_error((std::string("Can't snap invalid pid (" + std::to_string(pid_) + ")")).c_str());
-
-	all_regions_.clear();
+void memory::browser::snap_mem_regions(std::vector<mem_region>& mr, const bool alloc_mem) {
+	mr.clear();
 	/* example :
 	* 5662e000-56a21000 r-xp 00000000 08:16 29098197                           /home/ema/.steam/ubuntu12_32/steam
 	* 56a21000-56a36000 r--p 003f3000 08:16 29098197                           /home/ema/.steam/ubuntu12_32/steam
@@ -105,9 +102,15 @@ void memory::browser::snap_pid(void) {
 				device[32];
 		const auto rv = std::sscanf(line.c_str(), "%lx-%lx %s %lx %s %li", &beg, &end, permissions, &offset, device, &inode);
 		if(rv == 6 && !inode && permissions[0] == 'r')
-			all_regions_.push_back(mem_region(beg, end, line));
+			mr.push_back(mem_region(beg, end, line, alloc_mem));
 	}
+}
 
+void memory::browser::snap_pid(void) {
+	if(pid_ < 0)
+		throw std::runtime_error((std::string("Can't snap invalid pid (" + std::to_string(pid_) + ")")).c_str());
+
+	snap_mem_regions(all_regions_, true);
 	for(auto& v : all_regions_) {
 		const ssize_t		sz = v.end - v.beg;
 		const struct iovec	local = { (void*)v.data, (size_t)sz },
@@ -124,6 +127,45 @@ void memory::browser::snap_pid(void) {
 		}
 		v.dirty = false;
 	}
+}
+
+void memory::browser::update_regions(void) {
+	if(-1 == pid_)
+		return;
+	std::vector<mem_region>	new_regions;
+	new_regions.reserve(all_regions_.size()*2);
+	// get them w/o allocating memory
+	snap_mem_regions(new_regions, false);
+	// then merge the current into new (if possible)
+	// regions are supposed to be sorted, so that
+	// below algorithm should be O(N) instead of
+	// O(N^2)
+	size_t hint = 0;
+	for(auto& r : new_regions) {
+		// lookup the same in the current regions
+		// using the hint
+		size_t	idx = 0;
+		for(idx = hint; idx < all_regions_.size(); ++idx) {
+			mem_region&	cur_r = all_regions_[idx];
+			// if we have match 'move' the region
+			// content
+			if((cur_r.beg == r.beg) && (cur_r.end == r.end)) {
+				r = std::move(cur_r);
+				hint = idx+1;
+				break;
+			}
+		}
+		// if we don't have 'data' member initilized
+		// allocate memory - this is expensive
+		// hopefully doesn't happen frequently
+		if(!r.data) {
+			r.data = (uint8_t*)std::malloc(r.end-r.beg);
+			if(!r.data)
+				throw std::runtime_error((std::string("Can't allocate mem_region (") + std::to_string(r.beg) + "," + std::to_string(r.end) + ")").c_str());
+		}
+	}
+	// finally, swap vectors
+	all_regions_.swap(new_regions);
 }
 
 ssize_t memory::browser::find_once(const pattern& p, const uint8_t* buf, const size_t sz, pbyte& hint, const bool debug_all) const {
@@ -210,7 +252,11 @@ void memory::browser::snap(void) {
 	verify_regions();
 }
 
-void memory::browser::set_mem_dirty(void) {
+void memory::browser::update(void) {
+	// need to check memory layout
+	// usually shouldn't change much
+	// but it _does_ sometime
+	update_regions();
 	// don't execute the code
 	// in case we haven't enabled
 	// dirty_opt_
@@ -266,7 +312,7 @@ void memory::browser::load(const char* dir_name) {
 	std::sort(mem_files.begin(), mem_files.end(), [](const mem_data& lhs, const mem_data& rhs) -> bool { return lhs.file < rhs.file; } );
 	all_regions_.clear();
 	for(const auto& i : mem_files) {
-		all_regions_.push_back(mem_region(i.beg, i.end, i.file));
+		all_regions_.push_back(mem_region(i.beg, i.end, i.file, true));
 		auto& latest_reg = *all_regions_.rbegin();
 		// load data
 		std::ifstream	istr((std::string(dir_name) + "/" + i.file).c_str(), std::ios_base::binary);
@@ -320,7 +366,7 @@ namespace {
 	}
 }
 
-std::wstring memory::browser::read_utf8(const size_t addr, const size_t len, const bool refresh) {
+bool memory::browser::safe_read_utf8(const size_t addr, const size_t len, std::wstring& out, const bool refresh) {
 	// pre-condition: all_regions_ is
 	// actually correctly formatted
 	// addr between boundaries is _not_
@@ -333,33 +379,63 @@ std::wstring memory::browser::read_utf8(const size_t addr, const size_t len, con
 		if(addr + len > (v.data_sz + v.beg))
 			throw std::runtime_error("Can't interpret memory, T size too large");
 		const char*	utf8_ptr = (const char*)&v.data[addr - v.beg];
-		return from_utf8(utf8_ptr, len);
+		out = from_utf8(utf8_ptr, len);
+		return true;
 	}
-	throw std::runtime_error("Coudln't find specified address");
+	return false;
 }
 
-size_t memory::browser::load_effective_addr_rel(const size_t addr, const bool refresh) {
+bool memory::browser::safe_load_effective_addr_rel(const size_t addr, size_t& out, const bool refresh) {
 	const int	opcodeLength = 3,
 			paramLength = 4,
 			instructionLength = opcodeLength + paramLength;
 
-	uint32_t operand = read_mem<uint32_t>(addr + opcodeLength, refresh);
+	uint32_t operand;
+	if(!safe_read_mem<uint32_t>(addr + opcodeLength, operand, refresh))
+		return false;
 	uint64_t operand64 = operand;
 
 	// 64 bit relative addressing 
 	if (operand64 > std::numeric_limits<int32_t>::max()) {
 		operand64 = 0xffffffff00000000 | operand64;
 	}
-	return addr + operand64 + instructionLength;
+	out = addr + operand64 + instructionLength;
+	return true;
+}
+
+bool memory::browser::safe_load_multilevel_addr_rel(const size_t addr, const uint32_t* off_b, const uint32_t* off_e, size_t& out, const bool refresh) {
+	size_t	rv = addr;
+	for(auto i = off_b; i != off_e; ++i) {
+		size_t	cur_rv;
+		if(!safe_read_mem<size_t>(rv, cur_rv, refresh))
+			return false;
+		if(!cur_rv)
+			return false;
+		rv = (size_t)((int64_t)(cur_rv) + *i);
+
+	}
+	out = rv;
+	return true;
+}
+
+std::wstring memory::browser::read_utf8(const size_t addr, const size_t len, const bool refresh) {
+	std::wstring	rv;
+	if(!safe_read_utf8(addr, len, rv, refresh))
+		throw std::runtime_error("Couldn't find specified address");
+	return rv;
+}
+
+size_t memory::browser::load_effective_addr_rel(const size_t addr, const bool refresh) {
+	size_t	out;
+	if(!safe_load_effective_addr_rel(addr, out, refresh))
+		throw std::runtime_error("Couldn't find specified address");
+	return out;
 }
 
 size_t memory::browser::load_multilevel_addr_rel(const size_t addr, const uint32_t* off_b, const uint32_t* off_e, const bool refresh) {
-	size_t	rv = addr;
-	for(auto i = off_b; i != off_e; ++i) {
-		const auto	cur_rv = read_mem<size_t>(rv, refresh);
-		rv = (uint32_t)(cur_rv) + *i;
-
-	}
+	size_t	rv;
+	if(!safe_load_multilevel_addr_rel(addr, off_b, off_e, rv, refresh))
+		throw std::runtime_error("Couldn't find specified address");
 	return rv;
 }
 

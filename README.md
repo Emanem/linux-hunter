@@ -10,6 +10,7 @@ Prototype MH:W companion app for Linux, inspired by SmartHunter.
 * [Linux differences](#linux-differences)
   * [AoB structures](#aob-structures)
   * [Strings are longer](#strings-are-longer)
+  * [Wine Complexities](#wine-complexities)
 * [Root access](#root-access)
 * [How to build](#how-to-build)
 * [How to run](#how-to-run)
@@ -19,9 +20,10 @@ Prototype MH:W companion app for Linux, inspired by SmartHunter.
 Running the application as `./linux-hunter --help` will produce the following:
 ```
 Usage: ./linux-hunter [options]
-Executes linux-hunter 0.0.3
+Executes linux-hunter 0.0.4
 
 -p, --mhw-pid p     Specifies which pid to scan memory for (usually main MH:W)
+-m, --show-monsters Shows HP monsters data (requires slightly more CPU usage)
 -s, --save dir      Captures the specified pid into directory 'dir' and quits
 -l, --load dir      Loads the specified capture directory 'dir' and displays
                     info (static - useful for debugging)
@@ -49,8 +51,11 @@ The second row displays the MH:W session id (if any) and the owner of such sessi
 
 The following rows will represent the players and the absolute/relative damage (currently they may display _NaN_ when not in a hunt).
 
+If then you've enabled the `-m` (or `--show-monsters`), another pane will appear with the monsters currently tracked by the game and their current, total and % _HP_.
+
 ## Screenshots
 
+![During Hunt](https://raw.githubusercontent.com/Emanem/linux-hunter/master/pics/hunt0.jpg)
 ![Before Hunt](https://raw.githubusercontent.com/Emanem/linux-hunter/master/pics/start_hunt.jpg)
 ![Mid Hunt](https://raw.githubusercontent.com/Emanem/linux-hunter/master/pics/mid_hunt.jpg)
 ![End Hunt](https://raw.githubusercontent.com/Emanem/linux-hunter/master/pics/end_hunt.jpg)
@@ -70,6 +75,33 @@ Other AoBs such as [PlayerDamage](https://github.com/Emanem/linux-hunter/blob/6b
 
 ### Strings are longer 
 When reading the players' names I have to [add one byte](https://github.com/Emanem/linux-hunter/blob/6b397574ff51d5c37b2dc4f2ec32e6558901a807/src/main.cpp#L149); compare the similar logic in [SmartHunter](https://github.com/sir-wilhelm/SmartHunter/blob/7fa3d5a30a653f3587d3ba32afec195224690b9c/SmartHunter/Game/Helpers/MhwHelper.cs#L298).
+
+### Wine Complexities
+I've also reached out to wine SMEs asking about the efforts of creating/porting such compation software. Their feedback has been:
+```
+What you are doing here is very fragile, even going from Windows to Windows. I realize it is a common thing
+to do for game mods though if the game does not provide an API for such modifications.
+
+How reliably memory patterns are replicated between Wine and Windows and even two different Windows versions
+depends on how the allocations are made. If you are looking up pointers into the game's code in its DLLs and
+EXE files they are very similar because the PE file is mmap'ed into the processes' address space. You have 
+good chances of the absolute addresses to be identical.
+
+If the game allocates a big blob of Heap memory in one go and fills it with data you should also be lucky.
+If there are multiple independent heap allocations done by the game the patterns will start to look 
+differently. Wine will not allocate smaller memory blobs than requested, but a heap allocation may be 
+slightly larger, placed in different areas of the address space, etc. The exact details not only depend on
+Wine, but also on the Linux kernel, linux libs etc.
+
+Things will get even more spotty if the actual memory allocations are done by some Windows API functions.
+I don't know the string APIs in detail, so the following example is just a hypothetical one: If the game
+loads data from an XML file we pass the heavy lifting to the Linux libxml2 library. Its internal workings
+are different from microsoft's msxml.dll so the layout of the loaded file will not look alike at all.
+
+You can try to look into some observable allocation properties with functions like HeapSize and 
+VirtualQuery. One thing worth exploring is finding memory allocations not by searching for magic patterns
+in memory but hooking functions that the game uses to load the data. It may or may not work better.
+```
 
 ## Root access
 Unforutnately looks like CAPCOM and/or wine/Proton are protecting memory, hence this requires `sudo` access when running.

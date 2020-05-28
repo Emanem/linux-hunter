@@ -51,17 +51,33 @@ namespace memory {
 			ssize_t		data_sz;
 			bool		dirty;
 
-			mem_region(uint64_t b, uint64_t e, const std::string& d) : beg(b), end(e), debug_info(d), data((uint8_t*)std::malloc(e-b)), data_sz(e-b), dirty(true) {
-				if(!data)
+			mem_region(uint64_t b, uint64_t e, const std::string& d, const bool alloc_mem) : 
+				beg(b), end(e), debug_info(d), data((alloc_mem) ? (uint8_t*)std::malloc(e-b) : 0), data_sz(e-b), dirty(true) {
+				if(alloc_mem && !data)
 					throw std::runtime_error((std::string("Can't allocate mem_region (") + std::to_string(b) + "," + std::to_string(e) + ")").c_str());
 			}
 
-			mem_region(mem_region&& rhs) : beg(std::move(rhs.beg)), end(std::move(rhs.end)), debug_info(std::move(rhs.debug_info)), data(std::move(rhs.data)), data_sz(std::move(rhs.data_sz))  {
+			mem_region(mem_region&& rhs) : beg(std::move(rhs.beg)), end(std::move(rhs.end)), debug_info(std::move(rhs.debug_info)), data(std::move(rhs.data)), data_sz(std::move(rhs.data_sz)), dirty(std::move(rhs.dirty))  {
 				rhs.data = 0;
 			}
 
 			mem_region(const mem_region&) = delete;
 			mem_region& operator=(const mem_region&) = delete;
+
+			mem_region& operator=(mem_region&& rhs) {
+				if(&rhs != this) {
+					beg = std::move(rhs.beg);
+					end = std::move(rhs.end);
+					debug_info = std::move(rhs.debug_info);
+					if(data) std::free(data);
+					data = std::move(rhs.data);
+					rhs.data = 0;
+					data_sz = std::move(rhs.data_sz);
+					dirty = std::move(rhs.dirty);
+				}
+				return *this;
+			}
+
 
 			~mem_region() {
 				if(data)
@@ -73,7 +89,11 @@ namespace memory {
 		bool			dirty_opt_;
 		std::vector<mem_region>	all_regions_;
 
+		void snap_mem_regions(std::vector<mem_region>& mr, const bool alloc_mem);
+
 		void snap_pid(void);
+
+		void update_regions(void);
 
 		ssize_t find_once(const pattern& p, const uint8_t* buf, const size_t sz, pbyte& hint, const bool debug_all) const;
 
@@ -87,7 +107,7 @@ namespace memory {
 
 		void snap(void);
 
-		void set_mem_dirty(void);
+		void update(void);
 
 		void store(const char* dir_name);
 		
@@ -96,7 +116,7 @@ namespace memory {
 		ssize_t find_first(const pattern& p, const bool debug_all, const size_t start_addr = 0);
 
 		template<typename T>
-		T read_mem(const size_t addr, const bool refresh = false) {
+		bool safe_read_mem(const size_t addr, T& out, const bool refresh = false) {
 			// pre-condition: all_regions_ is
 			// actually correctly formatted
 			// addr between boundaries is _not_
@@ -107,10 +127,25 @@ namespace memory {
 				if(refresh)
 					refresh_region(v);
 				if(addr + sizeof(T) > (v.data_sz + v.beg))
-					throw std::runtime_error("Can't interpret memory, T size too large");
-				return *(T*)&v.data[addr - v.beg];
+					return false;
+				out = *(T*)&v.data[addr - v.beg];
+				return true;
 			}
-			throw std::runtime_error("Coudln't find specified address");
+			return false;
+		}
+
+		bool safe_read_utf8(const size_t addr, const size_t len, std::wstring& out, const bool refresh = false);
+
+		bool safe_load_effective_addr_rel(const size_t addr, size_t& out, const bool refresh = false);
+
+		bool safe_load_multilevel_addr_rel(const size_t addr, const uint32_t* off_b, const uint32_t* off_e, size_t& out, const bool refresh = false);
+
+		template<typename T>
+		T read_mem(const size_t addr, const bool refresh = false) {
+			T	rv;
+			if(!safe_read_mem<T>(addr, rv, refresh))
+				throw std::runtime_error("Couldn't find specified address");
+			return rv;
 		}
 
 		std::wstring read_utf8(const size_t addr, const size_t len, const bool refresh = false);

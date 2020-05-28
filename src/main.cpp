@@ -19,12 +19,11 @@
 #include <sstream>
 #include <getopt.h>
 #include <cstring>
-#include "patterns.h"
-#include "offsets.h"
 #include "memory.h"
 #include "ui.h"
 #include "events.h"
 #include "timer.h"
+#include "mhw_lookup.h"
 
 // Useful links with the SmartHunter sources; note that
 // sir-wilhelm is the one up to date with most recent
@@ -50,13 +49,14 @@ namespace {
 }
 
 namespace {
-	const char*	VERSION = "0.0.3";
+	const char*	VERSION = "0.0.4";
 
 	// settings/options management
 	pid_t		mhw_pid = -1;
 	std::string	save_dir,
 			load_dir;
-	bool		debug_ptrs = false,
+	bool		show_monsters_data = false,
+			debug_ptrs = false,
 			debug_all = false,
 			mem_dirty_opt = false;
 	size_t		refresh_interval = 1000;
@@ -64,6 +64,7 @@ namespace {
 	void print_help(const char *prog, const char *version) {
 		std::cerr <<	"Usage: " << prog << " [options]\nExecutes linux-hunter " << version << "\n\n"
 				"-p, --mhw-pid p     Specifies which pid to scan memory for (usually main MH:W)\n"
+				"-m, --show-monsters Shows HP monsters data (requires slightly more CPU usage)\n"
 				"-s, --save dir      Captures the specified pid into directory 'dir' and quits\n"
 				"-l, --load dir      Loads the specified capture directory 'dir' and displays\n"
 				"                    info (static - useful for debugging)\n"
@@ -85,6 +86,7 @@ namespace {
 		static struct option	long_options[] = {
 			{"help",		no_argument,	   0,	0},
 			{"mhw-pid",		required_argument, 0,   'p'},
+			{"show-monsters",	no_argument,	   0,	'm'},
 			{"save",		required_argument, 0,	's'},
 			{"load",		required_argument, 0,	'l'},
 			{"debug-ptrs",		no_argument,	   0,	0},
@@ -98,7 +100,7 @@ namespace {
 			// getopt_long stores the option index here
 			int		option_index = 0;
 
-			if(-1 == (c = getopt_long(argc, argv, "p:s:l:r:", long_options, &option_index)))
+			if(-1 == (c = getopt_long(argc, argv, "p:s:l:r:m", long_options, &option_index)))
 				break;
 
 			switch (c) {
@@ -139,6 +141,10 @@ namespace {
 					load_dir.resize(load_dir.size()-1);
 			} break;
 
+			case 'm': {
+				show_monsters_data = true;
+			} break;
+
 			case '?':
 			break;
 
@@ -147,48 +153,6 @@ namespace {
 			}
 		}
 		return optind;
-	}
-}
-
-namespace {
-	// try get player name
-	bool get_data_session(const memory::pattern& mp_Player, memory::browser& mb, ui::mhw_data& d) {
-		const auto	pnameptr = mb.load_effective_addr_rel(mp_Player.mem_location, true);
-		const auto	pnameaddr = mb.read_mem<uint32_t>(pnameptr, true);
-		// get session name (this should be UTF-8)...
-		d.session_id = mb.read_utf8(pnameaddr + offsets::PlayerNameCollection::SessionID, offsets::PlayerNameCollection::IDLength, true);
-		d.host_name = mb.read_utf8(pnameaddr + offsets::PlayerNameCollection::SessionHostPlayerName, offsets::PlayerNameCollection::PlayerNameLength, true);
-		return true;
-	}
-	// try get player damage (need name too)
-	bool get_data_damage(const memory::pattern& mp_Player, const memory::pattern& mp_Damage, memory::browser& mb, ui::mhw_data& d) {
-		const auto	pnameptr = mb.load_effective_addr_rel(mp_Player.mem_location, true);
-		const auto	pnameaddr = mb.read_mem<uint32_t>(pnameptr, true);
-		const auto	pdmgroot = mb.load_effective_addr_rel(mp_Damage.mem_location, true);
-		const uint32_t	pdmgml[] = { offsets::PlayerDamageCollection::FirstPlayerPtr + (offsets::PlayerDamageCollection::MaxPlayerCount * sizeof(size_t) * offsets::PlayerDamageCollection::NextPlayerPtr ) };
-		const auto	pdmglistaddr = mb.load_multilevel_addr_rel(pdmgroot, &pdmgml[0], &pdmgml[1], true);
-		// for each player...
-		for(uint32_t i = 0; i < offsets::PlayerDamageCollection::MaxPlayerCount; ++i) {
-			// not sure why, but on Linux the offset has 1 more byte for each entry...
-			const auto	pnameoffset = offsets::PlayerNameCollection::PlayerNameLength * i + i*1;
-			d.players[i].name = mb.read_utf8(pnameaddr + offsets::PlayerNameCollection::FirstPlayerName + pnameoffset, offsets::PlayerNameCollection::PlayerNameLength, true);
-			d.players[i].used = !d.players[i].name.empty();
-			if(!d.players[i].used)
-				continue;
-			const auto	pfirstplayer = pdmglistaddr + offsets::PlayerDamageCollection::FirstPlayerPtr;
-			const auto	pcurplayer = pfirstplayer + offsets::PlayerDamageCollection::NextPlayerPtr * i;
-			const auto	curplayeraddr = mb.read_mem<size_t>(pcurplayer, true);
-			d.players[i].damage = mb.read_mem<int32_t>(curplayeraddr + offsets::PlayerDamageCollection::Damage, true);
-		}
-		return true;
-	}
-
-	void get_data(const memory::pattern& mp_Player, const memory::pattern& mp_Damage, memory::browser& mb, ui::mhw_data& d) {
-		d = ui::mhw_data();
-		if(!get_data_session(mp_Player, mb, d))
-			return;
-		if(!get_data_damage(mp_Player, mp_Damage, mb, d))
-			return;
 	}
 }
 
@@ -272,19 +236,25 @@ int main(int argc, char *argv[]) {
 		// quit at this stage in case we have set the flag debug-all
 		if(debug_all)
 			return 0;
-		if(-1 == p6.mem_location || -1 == p2.mem_location)
+		if((-1 == p6.mem_location) || (-1 == p2.mem_location))
 			throw std::runtime_error("Can't find AoB for patterns::PlayerNameLinux and/or patterns::PlayerDamage");
+		if(show_monsters_data && (-1 == p3.mem_location))
+			throw std::runtime_error("Can't find AoB for patterns::Monster");
 		// main loop
-		ui::window	w;
-		ui::app_data	ad{ VERSION, timer::cpu_ms()};
-		ui::mhw_data	mhwd;
-		bool		run = true;
-		keyb_proc	kp(run);
+		ui::window			w;
+		ui::app_data			ad{ VERSION, timer::cpu_ms()};
+		ui::mhw_data			mhwd;
+		size_t				draw_flags = 0;
+		if(show_monsters_data)
+			draw_flags |= ui::draw_flags::SHOW_MONSTER_DATA;
+		mhw_lookup::pattern_data	mhwpd{ &p6, &p2, (show_monsters_data) ? &p3 : 0 };
+		bool				run = true;
+		keyb_proc			kp(run);
 		while(run) {
 			timer::thread_tmr	tt(&ad.tm);
-			mb.set_mem_dirty();
-			get_data(p6, p2, mb, mhwd);
-			w.draw(ad, mhwd);
+			mb.update();
+			mhw_lookup::get_data(mhwpd, mb, mhwd);
+			w.draw(draw_flags, ad, mhwd);
 			const auto		tm_get = tt.get_wall();
 			const size_t		cur_refresh_tm = (refresh_interval > tm_get) ? (refresh_interval-tm_get) : 0;
 			while(!kp.do_io(cur_refresh_tm));
