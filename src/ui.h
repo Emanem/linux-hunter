@@ -32,6 +32,10 @@ namespace ui {
 		monster_info	monsters[8];
 	};
 
+	enum draw_flags {
+		SHOW_MONSTER_DATA = 1
+	};
+
 	class window {
 		WINDOW 	*w_;
 	public:
@@ -39,7 +43,7 @@ namespace ui {
 
 		~window();
 
-		void draw(const app_data& ad, const mhw_data& d);
+		void draw(const size_t flags, const app_data& ad, const mhw_data& d);
 	};
 }
 

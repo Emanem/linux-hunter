@@ -133,9 +133,9 @@ void mhw_lookup::get_data(const mhw_lookup::pattern_data& pd, memory::browser& m
 	d = ui::mhw_data();
 	if(!get_data_session(pd.player, mb, d))
 		return;
-	if(!get_data_damage(pd, mb, d))
-		return;
-	if(!get_data_monster(pd.monster, mb, d))
-		return;
+	if(pd.damage)
+		get_data_damage(pd, mb, d);
+	if(pd.monster)
+		get_data_monster(pd.monster, mb, d);
 }
 

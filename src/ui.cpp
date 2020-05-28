@@ -26,7 +26,7 @@ ui::window::~window() {
 	endwin();
 }
 
-void ui::window::draw(const app_data& ad, const mhw_data& d) {
+void ui::window::draw(const size_t flags, const app_data& ad, const mhw_data& d) {
 	clear();
 	char		buf[256]; // local buffer for strings
 	int 		row = 0, // number of terminal rows
@@ -109,25 +109,26 @@ void ui::window::draw(const app_data& ad, const mhw_data& d) {
 		attroff(A_BOLD);
 	}
 	base_row++;
-	// then Monsters - first header
-	{
+	// flasg to check monster data
+	if(flags & draw_flags::SHOW_MONSTER_DATA) {
+		// then Monsters - first header
 		attron(A_REVERSE);
 		mvprintw(base_row++, 0, "%-32s%-14s%-8s", "Monster Name", "HP", "%");
 		attroff(A_REVERSE);
-	}
-	// print the monster data
-	const int	max_monsters = sizeof(d.monsters)/sizeof(d.monsters[0]);
-	int		cur_monster = 0;
-	while((base_row < row) && (cur_monster < max_monsters)) {
-		const mhw_data::monster_info&	mi = d.monsters[cur_monster];
-		if(!mi.used) {
+		// print the monster data
+		const int	max_monsters = sizeof(d.monsters)/sizeof(d.monsters[0]);
+		int		cur_monster = 0;
+		while((base_row < row) && (cur_monster < max_monsters)) {
+			const mhw_data::monster_info&	mi = d.monsters[cur_monster];
+			if(!mi.used) {
+				++cur_monster;
+				continue;
+			}
+			if(mi.hp_current <= 0.001) attron(A_DIM);
+			mvprintw(base_row++, 0, "%-32s %6d/%6d%8.2f", mi.name, (int)mi.hp_current, (int)mi.hp_total, 100.0*mi.hp_current/mi.hp_total);
+			if(mi.hp_current <= 0.001) attroff(A_DIM);
 			++cur_monster;
-			continue;
 		}
-		if(mi.hp_current <= 0.001) attron(A_DIM);
-		mvprintw(base_row++, 0, "%-32s %6d/%6d%8.2f", mi.name, (int)mi.hp_current, (int)mi.hp_total, 100.0*mi.hp_current/mi.hp_total);
-		if(mi.hp_current <= 0.001) attroff(A_DIM);
-		++cur_monster;
 	}
 	refresh();
 }

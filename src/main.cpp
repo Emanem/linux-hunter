@@ -55,7 +55,8 @@ namespace {
 	pid_t		mhw_pid = -1;
 	std::string	save_dir,
 			load_dir;
-	bool		debug_ptrs = false,
+	bool		show_monsters_data = false,
+			debug_ptrs = false,
 			debug_all = false,
 			mem_dirty_opt = false;
 	size_t		refresh_interval = 1000;
@@ -63,6 +64,7 @@ namespace {
 	void print_help(const char *prog, const char *version) {
 		std::cerr <<	"Usage: " << prog << " [options]\nExecutes linux-hunter " << version << "\n\n"
 				"-p, --mhw-pid p     Specifies which pid to scan memory for (usually main MH:W)\n"
+				"-m, --show-monsters Shows HP monsters data (requires slightly more CPU usage)\n"
 				"-s, --save dir      Captures the specified pid into directory 'dir' and quits\n"
 				"-l, --load dir      Loads the specified capture directory 'dir' and displays\n"
 				"                    info (static - useful for debugging)\n"
@@ -84,6 +86,7 @@ namespace {
 		static struct option	long_options[] = {
 			{"help",		no_argument,	   0,	0},
 			{"mhw-pid",		required_argument, 0,   'p'},
+			{"show-monsters",	no_argument,	   0,	'm'},
 			{"save",		required_argument, 0,	's'},
 			{"load",		required_argument, 0,	'l'},
 			{"debug-ptrs",		no_argument,	   0,	0},
@@ -97,7 +100,7 @@ namespace {
 			// getopt_long stores the option index here
 			int		option_index = 0;
 
-			if(-1 == (c = getopt_long(argc, argv, "p:s:l:r:", long_options, &option_index)))
+			if(-1 == (c = getopt_long(argc, argv, "p:s:l:r:m", long_options, &option_index)))
 				break;
 
 			switch (c) {
@@ -136,6 +139,10 @@ namespace {
 				load_dir = optarg;
 				if(!load_dir.empty() && (*load_dir.rbegin() == '/'))
 					load_dir.resize(load_dir.size()-1);
+			} break;
+
+			case 'm': {
+				show_monsters_data = true;
 			} break;
 
 			case '?':
@@ -229,20 +236,25 @@ int main(int argc, char *argv[]) {
 		// quit at this stage in case we have set the flag debug-all
 		if(debug_all)
 			return 0;
-		if(-1 == p6.mem_location || -1 == p2.mem_location || -1 == p3.mem_location)
-			throw std::runtime_error("Can't find AoB for patterns::PlayerNameLinux and/or patterns::PlayerDamage and/or patterns::Monster");
+		if((-1 == p6.mem_location) || (-1 == p2.mem_location))
+			throw std::runtime_error("Can't find AoB for patterns::PlayerNameLinux and/or patterns::PlayerDamage");
+		if(show_monsters_data && (-1 == p3.mem_location))
+			throw std::runtime_error("Can't find AoB for patterns::Monster");
 		// main loop
 		ui::window			w;
 		ui::app_data			ad{ VERSION, timer::cpu_ms()};
 		ui::mhw_data			mhwd;
-		mhw_lookup::pattern_data	mhwpd{ &p6, &p2, &p3 };
+		size_t				draw_flags = 0;
+		if(show_monsters_data)
+			draw_flags |= ui::draw_flags::SHOW_MONSTER_DATA;
+		mhw_lookup::pattern_data	mhwpd{ &p6, &p2, (show_monsters_data) ? &p3 : 0 };
 		bool				run = true;
 		keyb_proc			kp(run);
 		while(run) {
 			timer::thread_tmr	tt(&ad.tm);
 			mb.set_mem_dirty();
 			mhw_lookup::get_data(mhwpd, mb, mhwd);
-			w.draw(ad, mhwd);
+			w.draw(draw_flags, ad, mhwd);
 			const auto		tm_get = tt.get_wall();
 			const size_t		cur_refresh_tm = (refresh_interval > tm_get) ? (refresh_interval-tm_get) : 0;
 			while(!kp.do_io(cur_refresh_tm));
