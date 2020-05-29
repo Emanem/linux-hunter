@@ -24,6 +24,7 @@
 #include "events.h"
 #include "timer.h"
 #include "mhw_lookup.h"
+#include "utils.h"
 
 // Useful links with the SmartHunter sources; note that
 // sir-wilhelm is the one up to date with most recent
@@ -63,11 +64,13 @@ namespace {
 
 	void print_help(const char *prog, const char *version) {
 		std::cerr <<	"Usage: " << prog << " [options]\nExecutes linux-hunter " << version << "\n\n"
-				"-p, --mhw-pid p     Specifies which pid to scan memory for (usually main MH:W)\n"
 				"-m, --show-monsters Shows HP monsters data (requires slightly more CPU usage)\n"
 				"-s, --save dir      Captures the specified pid into directory 'dir' and quits\n"
 				"-l, --load dir      Loads the specified capture directory 'dir' and displays\n"
 				"                    info (static - useful for debugging)\n"
+				"    --mhw-pid p     Specifies which pid to scan memory for (usually main MH:W)\n"
+				"                    When not specified, linux-hunter will try to find it automatically\n"
+				"                    This is default behaviour\n"
 				"    --debug-ptrs    Prints the main AoB (Array of Bytes) pointers (useful for debugging)\n"
 				"    --debug-all     Prints all the AoB (Array of Bytes) partial and full matches\n"
 				"                    (useful for analysing AoB) and quits; implies setting debug-ptrs\n"
@@ -85,7 +88,7 @@ namespace {
 		int			c;
 		static struct option	long_options[] = {
 			{"help",		no_argument,	   0,	0},
-			{"mhw-pid",		required_argument, 0,   'p'},
+			{"mhw-pid",		required_argument, 0,   0},
 			{"show-monsters",	no_argument,	   0,	'm'},
 			{"save",		required_argument, 0,	's'},
 			{"load",		required_argument, 0,	'l'},
@@ -100,7 +103,7 @@ namespace {
 			// getopt_long stores the option index here
 			int		option_index = 0;
 
-			if(-1 == (c = getopt_long(argc, argv, "p:s:l:r:m", long_options, &option_index)))
+			if(-1 == (c = getopt_long(argc, argv, "s:l:r:m", long_options, &option_index)))
 				break;
 
 			switch (c) {
@@ -117,11 +120,9 @@ namespace {
 					debug_all = debug_ptrs = true;
 				} else if (!std::strcmp("mem-dirty-opt", long_options[option_index].name)) {
 					mem_dirty_opt = true;
+				} else if (!std::strcmp("mhw-pid", long_options[option_index].name)) {
+					mhw_pid = std::atoi(optarg);
 				}
-			} break;
-
-			case 'p': {
-				mhw_pid = std::atoi(optarg);
 			} break;
 
 			case 'r': {
@@ -197,6 +198,12 @@ int main(int argc, char *argv[]) {
 		// check come consistency
 		if(!load_dir.empty() && !save_dir.empty())
 			throw std::runtime_error("Can't specify both 'load' and 'save' options");
+		// if we aren't in load mode and mhw pid is -1
+		// try to find it automatically
+		if(-1 == mhw_pid && load_dir.empty()) {
+			mhw_pid = utils::find_mhw_pid();
+			std::cerr << "Found pid: " << mhw_pid << std::endl;
+		}
 		// start here...
 		memory::browser	mb(mhw_pid, mem_dirty_opt);
 		// if we're in load mode fill b
@@ -237,7 +244,7 @@ int main(int argc, char *argv[]) {
 		if(debug_all)
 			return 0;
 		if((-1 == p6.mem_location) || (-1 == p2.mem_location))
-			throw std::runtime_error("Can't find AoB for patterns::PlayerNameLinux and/or patterns::PlayerDamage");
+			throw std::runtime_error("Can't find AoB for patterns::PlayerNameLinux and/or patterns::PlayerDamage - Try to run with 'sudo' and/or specify a pid");
 		if(show_monsters_data && (-1 == p3.mem_location))
 			throw std::runtime_error("Can't find AoB for patterns::Monster");
 		// main loop
