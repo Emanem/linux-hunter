@@ -86,7 +86,8 @@ namespace memory {
 		};
 
 		pid_t			pid_;
-		bool			dirty_opt_;
+		bool			dirty_opt_,
+					lazy_alloc_;
 		std::vector<mem_region>	all_regions_;
 
 		void snap_mem_regions(std::vector<mem_region>& mr, const bool alloc_mem);
@@ -100,8 +101,10 @@ namespace memory {
 		void verify_regions(void);
 
 		void refresh_region(mem_region& r);
+
+		ssize_t find_first(const pattern& p, const bool debug_all, const size_t start_addr = 0);
 	public:
-		browser(const pid_t p, const bool dirty_opt);
+		browser(const pid_t p, const bool dirty_opt, const bool lazy_alloc);
 
 		~browser();
 
@@ -109,11 +112,17 @@ namespace memory {
 
 		void update(void);
 
+		void clear(void);
+
 		void store(const char* dir_name);
 		
 		void load(const char* dir_name);
 
-		ssize_t find_first(const pattern& p, const bool debug_all, const size_t start_addr = 0);
+		void find_patterns(pattern** b, pattern** e, const bool debug_all) {
+			for(pattern** i = b; i < e; ++i) {
+				if(*i) (*i)->mem_location = find_first(**i, debug_all);
+			}
+		}
 
 		template<typename T>
 		bool safe_read_mem(const size_t addr, T& out, const bool refresh = false) {

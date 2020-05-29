@@ -59,7 +59,8 @@ namespace {
 	bool		show_monsters_data = false,
 			debug_ptrs = false,
 			debug_all = false,
-			mem_dirty_opt = false;
+			mem_dirty_opt = false,
+			lazy_alloc = false;
 	size_t		refresh_interval = 1000;
 
 	void print_help(const char *prog, const char *version) {
@@ -76,6 +77,9 @@ namespace {
 				"                    (useful for analysing AoB) and quits; implies setting debug-ptrs\n"
 				"    --mem-dirty-opt Enable optimization to load memory pages just once per refresh;\n"
 				"                    this should be slightly less accurate but uses less system time\n"
+				"    --lazy-alloc    Enable optimization to reduce memory usage and allocate memory only\n"
+				"                    when absolutely necessary - decreases memory usage but slightly\n"
+				"                    increase calls to alloc/free functions\n"
 				"-r, --refresh i     Specifies what is the UI/stats refresh interval in ms (default 1000)\n"
 				"    --help          prints this help and exit\n\n"
 				"When linux-hunter is running:\n\n"
@@ -95,6 +99,7 @@ namespace {
 			{"debug-ptrs",		no_argument,	   0,	0},
 			{"debug-all",		no_argument,	   0,	0},
 			{"mem-dirty-opt",	no_argument,	   0,	0},
+			{"lazy-alloc",		no_argument,	   0,	0},
 			{"refresh",		required_argument, 0,   'r'},
 			{0, 0, 0, 0}
 		};
@@ -122,6 +127,8 @@ namespace {
 					mem_dirty_opt = true;
 				} else if (!std::strcmp("mhw-pid", long_options[option_index].name)) {
 					mhw_pid = std::atoi(optarg);
+				} else if (!std::strcmp("lazy-alloc", long_options[option_index].name)) {
+					lazy_alloc = true;
 				}
 			} break;
 
@@ -205,7 +212,7 @@ int main(int argc, char *argv[]) {
 			std::cerr << "Found pid: " << mhw_pid << std::endl;
 		}
 		// start here...
-		memory::browser	mb(mhw_pid, mem_dirty_opt);
+		memory::browser	mb(mhw_pid, mem_dirty_opt, lazy_alloc);
 		// if we're in load mode fill b
 		// with content from the disk
 		if(!load_dir.empty()) {
@@ -224,13 +231,13 @@ int main(int argc, char *argv[]) {
 		}
 		// print out basic patterns
 		std::cerr << "Finding main AoB entry points..." << std::endl;
-		for(auto p : p_vec) {
-			p->mem_location = mb.find_first(*p, debug_all);
-			if(debug_ptrs) {
-				/*
-				 * This code is used to ensure the read_mem was
-				 * actually working... seems to be :-)
-				 */
+		mb.find_patterns(&p_vec[0], &p_vec[sizeof(p_vec)/sizeof(p_vec[0])], debug_all);
+		if(debug_ptrs) {
+			/*
+			 * This code is used to ensure the read_mem was
+			 * actually working... seems to be :-)
+			 */
+			for(const auto& p : p_vec) {
 				std::ostringstream	ostr;
 				if(p->mem_location > 0) {
 					const uint64_t	u64 = mb.read_mem<uint64_t>(p->mem_location);
@@ -257,6 +264,13 @@ int main(int argc, char *argv[]) {
 		mhw_lookup::pattern_data	mhwpd{ &p6, &p2, (show_monsters_data) ? &p3 : 0 };
 		bool				run = true;
 		keyb_proc			kp(run);
+		// if we don't perform clear, the lazy_alloc
+		// option would be rendered useless because
+		// the memory::browser recycles memory and if
+		// we were not to clear it, we would keep it
+		// even with lazy allocations
+		if(lazy_alloc)
+			mb.clear();
 		while(run) {
 			timer::thread_tmr	tt(&ad.tm);
 			mb.update();

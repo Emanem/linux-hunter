@@ -34,6 +34,9 @@ Executes linux-hunter 0.0.5
                     (useful for analysing AoB) and quits; implies setting debug-ptrs
     --mem-dirty-opt Enable optimization to load memory pages just once per refresh;
                     this should be slightly less accurate but uses less system time
+    --lazy-alloc    Enable optimization to reduce memory usage and allocate memory only
+                    when absolutely necessary - decreases memory usage but slightly
+                    increase calls to alloc/free functions
 -r, --refresh i     Specifies what is the UI/stats refresh interval in ms (default 1000)
     --help          prints this help and exit
 
