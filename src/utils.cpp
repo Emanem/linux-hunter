@@ -5,7 +5,6 @@
 #include <cctype>
 #include <fstream>
 #include <cstring>
-#include <iostream>
 
 pid_t utils::find_mhw_pid(void) {
 	std::unique_ptr<DIR, void(*)(DIR*)>	d(opendir("/proc"), [](DIR *d){ if(d) closedir(d);});
