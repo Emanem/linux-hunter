@@ -20,18 +20,23 @@ Prototype MH:W companion app for Linux, inspired by SmartHunter.
 Running the application as `./linux-hunter --help` will produce the following:
 ```
 Usage: ./linux-hunter [options]
-Executes linux-hunter 0.0.4
+Executes linux-hunter 0.0.5
 
--p, --mhw-pid p     Specifies which pid to scan memory for (usually main MH:W)
 -m, --show-monsters Shows HP monsters data (requires slightly more CPU usage)
 -s, --save dir      Captures the specified pid into directory 'dir' and quits
 -l, --load dir      Loads the specified capture directory 'dir' and displays
                     info (static - useful for debugging)
+    --mhw-pid p     Specifies which pid to scan memory for (usually main MH:W)
+                    When not specified, linux-hunter will try to find it automatically
+                    This is default behaviour
     --debug-ptrs    Prints the main AoB (Array of Bytes) pointers (useful for debugging)
     --debug-all     Prints all the AoB (Array of Bytes) partial and full matches
                     (useful for analysing AoB) and quits; implies setting debug-ptrs
     --mem-dirty-opt Enable optimization to load memory pages just once per refresh;
                     this should be slightly less accurate but uses less system time
+    --lazy-alloc    Enable optimization to reduce memory usage and allocate memory only
+                    when absolutely necessary - decreases memory usage but slightly
+                    increase calls to alloc/free functions
 -r, --refresh i     Specifies what is the UI/stats refresh interval in ms (default 1000)
     --help          prints this help and exit
 
@@ -39,7 +44,6 @@ When linux-hunter is running:
 
 'q' or 'ESC'        Quits the application
 'r'                 Force a refresh
-
 ```
 
 ## UI

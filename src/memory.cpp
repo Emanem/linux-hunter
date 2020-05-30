@@ -158,10 +158,11 @@ void memory::browser::update_regions(void) {
 		// if we don't have 'data' member initilized
 		// allocate memory - this is expensive
 		// hopefully doesn't happen frequently
-		if(!r.data) {
+		if(!lazy_alloc_ && !r.data) {
 			r.data = (uint8_t*)std::malloc(r.end-r.beg);
 			if(!r.data)
 				throw std::runtime_error((std::string("Can't allocate mem_region (") + std::to_string(r.beg) + "," + std::to_string(r.end) + ")").c_str());
+			r.dirty = true;
 		}
 	}
 	// finally, swap vectors
@@ -223,6 +224,15 @@ void memory::browser::verify_regions(void) {
 void memory::browser::refresh_region(mem_region& r) {
 	if(pid_ < 0)
 		return;
+	// usually this code is only going to be
+	// invoked when lazy_alloc is set - and
+	// of course data is 'dirty'
+	if(!r.data) {
+		r.data = (uint8_t*)std::malloc(r.end-r.beg);
+		if(!r.data)
+			throw std::runtime_error((std::string("Can't allocate mem_region (") + std::to_string(r.beg) + "," + std::to_string(r.end) + ")").c_str());
+		r.dirty = true;
+	}
 	if(dirty_opt_ && !r.dirty)
 		return;
 
@@ -241,7 +251,28 @@ void memory::browser::refresh_region(mem_region& r) {
 	r.dirty = false;
 }
 
-memory::browser::browser(const pid_t p, const bool dirty_opt) : pid_(p), dirty_opt_(dirty_opt) {
+ssize_t memory::browser::find_first(const pattern& p, const bool debug_all, const size_t start_addr) {
+	for(const auto& v : all_regions_) {
+		if(v.end <= start_addr)
+			continue;
+		const uint8_t	*p_buf = v.data,
+				*p_hint = 0;
+		size_t		p_size = v.data_sz;
+		while(true) {
+			const auto	rs = find_once(p, p_buf, p_size, p_hint, debug_all);
+			const ssize_t	hint_diff = p_hint - v.data;
+			if(rs >= 0)
+				return rs + hint_diff + v.beg;
+			if(hint_diff >= v.data_sz)
+				break;
+			p_buf = p_hint;
+			p_size = v.data_sz - hint_diff;
+		}
+	}
+	return -1;
+}
+
+memory::browser::browser(const pid_t p, const bool dirty_opt, const bool lazy_alloc) : pid_(p), dirty_opt_(dirty_opt), lazy_alloc_(lazy_alloc) {
 }
 
 memory::browser::~browser() {
@@ -264,6 +295,16 @@ void memory::browser::update(void) {
 		return;
 	for(auto& v: all_regions_)
 		v.dirty = true;
+}
+
+void memory::browser::clear(void) {
+	// no point in clearing when we
+	// don't have a valid pid
+	// we would operate from a static
+	// snap anyway
+	if(-1 == pid_)
+		return;
+	all_regions_.clear();
 }
 
 void memory::browser::store(const char* dir_name) {
@@ -326,27 +367,6 @@ void memory::browser::load(const char* dir_name) {
 		latest_reg.data_sz = sz;
 	}
 	verify_regions();
-}
-
-ssize_t memory::browser::find_first(const pattern& p, const bool debug_all, const size_t start_addr) {
-	for(const auto& v : all_regions_) {
-		if(v.end <= start_addr)
-			continue;
-		const uint8_t	*p_buf = v.data,
-				*p_hint = 0;
-		size_t		p_size = v.data_sz;
-		while(true) {
-			const auto	rs = find_once(p, p_buf, p_size, p_hint, debug_all);
-			const ssize_t	hint_diff = p_hint - v.data;
-			if(rs >= 0)
-				return rs + hint_diff + v.beg;
-			if(hint_diff >= v.data_sz)
-				break;
-			p_buf = p_hint;
-			p_size = v.data_sz - hint_diff;
-		}
-	}
-	return -1;
 }
 
 namespace {
