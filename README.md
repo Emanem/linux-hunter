@@ -3,6 +3,7 @@ Prototype MH:W companion app for Linux, inspired by SmartHunter.
 
 ## Table of Contents
 
+* [Supported Version](#supported-version)
 * [Usage](#usage)
 * [UI](#ui)
 * [Screenshots](#screenshots)
@@ -15,6 +16,11 @@ Prototype MH:W companion app for Linux, inspired by SmartHunter.
 * [How to build](#how-to-build)
 * [How to run](#how-to-run)
 * [Credits](#credits)
+
+## Supported Version
+
+* 13.50.01 - Currently the _monster_ (`-m`) lookup doesn't work, looks like the offsets have changed, will try to tackle asap
+* ~~13.50.00 - Fully supported~~
 
 ## Usage
 Running the application as `./linux-hunter --help` will produce the following:
