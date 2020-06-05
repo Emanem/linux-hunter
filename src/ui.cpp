@@ -87,25 +87,35 @@ void ui::window::draw(const size_t flags, const app_data& ad, const mhw_data& d)
 	// compute total damage
 	int	total_damage = 0;
 	for(size_t i = 0; i < sizeof(d.players)/sizeof(d.players[0]); ++i)
-		total_damage += d.players[i].damage;
+		total_damage += (d.players[i].used) ? d.players[i].damage : 0;
 	// print players data
 	for(size_t i = 0; i < sizeof(d.players)/sizeof(d.players[0]); ++i, ++base_row) {
-		int	xoffset = 0;
-		attron(COLOR_PAIR(PLAYER_COLORS[i]));
-		mvaddwstr(base_row, xoffset, d.players[i].name.c_str());
+		if(!d.players[i].used) {
+			attron(A_DIM);
+			mvprintw(base_row, 0, "%-32s%-4d                  ", "<N/A>", i);
+			attroff(A_DIM);
+			continue;
+		}
+		int		xoffset = 0;
+		const auto	name_attr = (d.players[i].left_session) ? A_DIM : COLOR_PAIR(PLAYER_COLORS[i]);
+		attron(name_attr);
+		mvaddwstr(base_row, xoffset, (d.players[i].left_session) ? L"Left the session" : d.players[i].name.c_str());
 		xoffset += 32;
-		attroff(COLOR_PAIR(PLAYER_COLORS[i]));
+		if(!d.players[i].left_session)
+			attroff(name_attr);
 		mvprintw(base_row, xoffset, "%-4d", i);
 		xoffset += 4;
 		mvprintw(base_row, xoffset, "%10d", d.players[i].damage);
 		xoffset += 10;
-		mvprintw(base_row, xoffset, "%8.2f", 100.0*d.players[i].damage/total_damage);
+		mvprintw(base_row, xoffset, "%8.2f", (total_damage > 0) ? 100.0*d.players[i].damage/total_damage : 0);
 		xoffset += 6;
+		if(d.players[i].left_session)
+			attroff(name_attr);
 	}
 	// now just the total
 	{
 		attron(A_BOLD);
-		mvprintw(base_row++, 0, "%-32s%-4s%10d%8s", "Total", "", total_damage, "100.00");
+		mvprintw(base_row++, 0, "%-32s%-4s%10d%8s", "Total", "", total_damage, (total_damage > 0) ? "100.00" : "0.0");
 		attroff(A_BOLD);
 	}
 	base_row++;

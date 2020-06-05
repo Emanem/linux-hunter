@@ -59,13 +59,22 @@ namespace {
 			// not sure why, but on Linux the offset has 1 more byte for each entry...
 			const auto	pnameoffset = offsets::PlayerNameCollection::PlayerNameLength * i + i*1;
 			d.players[i].name = mb.read_utf8(pnameaddr + offsets::PlayerNameCollection::FirstPlayerName + pnameoffset, offsets::PlayerNameCollection::PlayerNameLength, true);
-			d.players[i].used = !d.players[i].name.empty();
+			// a player slot is used if the string is non empty and
+			// it is not made up all of '\0's...
+			d.players[i].used = (!d.players[i].name.empty()) && (d.players[i].name.find_first_not_of(L'\0') != std::wstring::npos); 
 			if(!d.players[i].used)
 				continue;
 			const auto	pfirstplayer = pdmglistaddr + offsets::PlayerDamageCollection::FirstPlayerPtr;
 			const auto	pcurplayer = pfirstplayer + offsets::PlayerDamageCollection::NextPlayerPtr * i;
 			const auto	curplayeraddr = mb.read_mem<size_t>(pcurplayer, true);
 			d.players[i].damage = mb.read_mem<int32_t>(curplayeraddr + offsets::PlayerDamageCollection::Damage, true);
+			// usually MH:W IB just overwrites the first wchar_t of
+			// the utf8 string with '\0' when a player leaves, which
+			// gives us the chance to ascertain if a player has left
+			// or not, because the 'name' wouldn't be empty but first
+			// char would be '\0'
+			// Also damage needs to be greated than 0
+			d.players[i].left_session = (L'\0' == d.players[i].name[0]) && (d.players[i].damage > 0.0);
 		}
 		return true;
 	}
@@ -120,9 +129,17 @@ namespace {
 			monsters[0] += offsets::Monster::MonsterStartOfStructOffset;
 		}
 		static_assert( sizeof(d.monsters)/sizeof(d.monsters[0]) == sizeof(monsters)/sizeof(monsters[0]), "Monsters can only be 3 at any time!");
+		uint32_t	cur_monster = 0;
 		for(size_t i = 0; i < sizeof(d.monsters)/sizeof(d.monsters[0]); ++i) {
-			if(!get_data_single_monster(monsters[i], mb, d.monsters[i]))
-				d.monsters[i].used = false;
+			// Ensure the monster pointer is within a valid
+			// memory location - this caters for 0 addresses too
+			if(monsters[i] < 0xffffff)
+				continue;
+			if(!get_data_single_monster(monsters[i], mb, d.monsters[cur_monster])) {
+				d.monsters[cur_monster].used = false;
+			 } else {
+				 ++cur_monster;
+			 }
 		}
 		return true;
 	}
