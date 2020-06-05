@@ -50,7 +50,7 @@ namespace {
 }
 
 namespace {
-	const char*	VERSION = "0.0.5";
+	const char*	VERSION = "0.0.6";
 
 	// settings/options management
 	pid_t		mhw_pid = -1;

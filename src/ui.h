@@ -29,7 +29,7 @@ namespace ui {
 		std::wstring	session_id,
 				host_name;
 		player_info	players[4];
-		monster_info	monsters[8];
+		monster_info	monsters[3];
 	};
 
 	enum draw_flags {

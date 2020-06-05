@@ -19,7 +19,7 @@ Prototype MH:W companion app for Linux, inspired by SmartHunter.
 
 ## Supported Version
 
-* 13.50.01 - Currently the _monster_ (`-m`) lookup doesn't work, looks like the offsets have changed, will try to tackle asap
+* 13.50.01 - Fully Supported (testing) ~~Currently the _monster_ (`-m`) lookup doesn't work, looks like the offsets have changed, will try to tackle asap~~
 * ~~13.50.00 - Fully supported~~
 
 ## Usage
@@ -132,4 +132,5 @@ This work couldn't have been possible w/o previous work of:
 * [Marcus101RR](https://github.com/Marcus101RR)
 * [r00telement](https://github.com/r00telement/SmartHunter)
 * [sir-wilhelm](https://github.com/sir-wilhelm/SmartHunter)
+* [Haato](https://github.com/Haato3o/HunterPie)
 
