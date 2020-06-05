@@ -29,6 +29,7 @@ namespace patterns {
 			PlayerDamage,
 			Monster,
 			PlayerBuff,
+			LobbyStatus,
 			Emetta,
 			PlayerNameLinux;
 }

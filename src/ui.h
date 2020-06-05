@@ -13,7 +13,8 @@ namespace ui {
 
 	struct mhw_data {
 		struct player_info {
-			bool		used = false;
+			bool		used = false,
+					left_session = false;
 			std::wstring	name;
 			int32_t		damage = 0;
 
@@ -29,7 +30,7 @@ namespace ui {
 		std::wstring	session_id,
 				host_name;
 		player_info	players[4];
-		monster_info	monsters[8];
+		monster_info	monsters[3];
 	};
 
 	enum draw_flags {

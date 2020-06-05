@@ -50,7 +50,7 @@ namespace {
 }
 
 namespace {
-	const char*	VERSION = "0.0.5";
+	const char*	VERSION = "0.0.6";
 
 	// settings/options management
 	pid_t		mhw_pid = -1;
@@ -198,8 +198,9 @@ int main(int argc, char *argv[]) {
 				p3(patterns::Monster),
 				p4(patterns::PlayerBuff),
 				p5(patterns::Emetta),
-				p6(patterns::PlayerNameLinux);
-		memory::pattern	*p_vec[] = { &p0, &p1, &p2, &p3, &p4 , &p5, &p6 };
+				p6(patterns::PlayerNameLinux),
+				p7(patterns::LobbyStatus);
+		memory::pattern	*p_vec[] = { &p0, &p1, &p2, &p3, &p4 , &p5, &p6, &p7 };
 		// parse args first
 		const auto optind = parse_args(argc, argv, argv[0], VERSION);
 		// check come consistency
@@ -261,7 +262,7 @@ int main(int argc, char *argv[]) {
 		size_t				draw_flags = 0;
 		if(show_monsters_data)
 			draw_flags |= ui::draw_flags::SHOW_MONSTER_DATA;
-		mhw_lookup::pattern_data	mhwpd{ &p6, &p2, (show_monsters_data) ? &p3 : 0 };
+		mhw_lookup::pattern_data	mhwpd{ &p6, &p2, (show_monsters_data) ? &p3 : 0, &p7 };
 		bool				run = true;
 		keyb_proc			kp(run);
 		// if we don't perform clear, the lazy_alloc
@@ -276,9 +277,11 @@ int main(int argc, char *argv[]) {
 			mb.update();
 			mhw_lookup::get_data(mhwpd, mb, mhwd);
 			w.draw(draw_flags, ad, mhwd);
-			const auto		tm_get = tt.get_wall();
-			const size_t		cur_refresh_tm = (refresh_interval > tm_get) ? (refresh_interval-tm_get) : 0;
-			while(!kp.do_io(cur_refresh_tm));
+			size_t			cur_refresh_tm = 0;
+			do {
+				const auto 	tm_get = tt.get_wall();
+				cur_refresh_tm = (refresh_interval > tm_get) ? (refresh_interval-tm_get) : 0;
+			} while(!kp.do_io(cur_refresh_tm));
 		}
 	} catch(const std::exception& e) {
 		std::cerr << "Exception: " << e.what() << std::endl;

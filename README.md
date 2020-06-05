@@ -16,17 +16,18 @@ Prototype MH:W companion app for Linux, inspired by SmartHunter.
 * [How to build](#how-to-build)
 * [How to run](#how-to-run)
 * [Credits](#credits)
+* [Changelog](#changelog)
 
 ## Supported Version
 
-* 13.50.01 - Currently the _monster_ (`-m`) lookup doesn't work, looks like the offsets have changed, will try to tackle asap
+* 13.50.01 - Fully Supported (testing) ~~Currently the _monster_ (`-m`) lookup doesn't work, looks like the offsets have changed, will try to tackle asap~~
 * ~~13.50.00 - Fully supported~~
 
 ## Usage
 Running the application as `./linux-hunter --help` will produce the following:
 ```
 Usage: ./linux-hunter [options]
-Executes linux-hunter 0.0.5
+Executes linux-hunter 0.0.6
 
 -m, --show-monsters Shows HP monsters data (requires slightly more CPU usage)
 -s, --save dir      Captures the specified pid into directory 'dir' and quits
@@ -72,7 +73,7 @@ If then you've enabled the `-m` (or `--show-monsters`), another pane will appear
 ![Back from Hunt](https://raw.githubusercontent.com/Emanem/linux-hunter/master/pics/back_gathering.jpg)
 
 ## Status
-Current code/logic is highly prototype and unoptimized - please refrain from using it, or use it at your own risk.
+Current code/logic is somehow prototype and partially optimized - please use it at your own risk.
 
 ## Linux differences
 Following the main differences I had to overcome to port the logic of SmartHunter to Linux; considering the challenges below, I think I've been lucky so far.
@@ -121,8 +122,12 @@ You need to have `libncursesw5-dev` installed to compile (on Ubuntu is `sudo apt
 Once done, `make release` and you'll have your _linux-hunter_ ready to be running.
 
 ## How to run
-Simply identify the MH:W _pid_, and then `sudo ./linux-hunter -p <pid>`; press `Esc` or `q` to quit.
-Running with experimental option `--mem-dirty-opt` should reduce the performance impact by limiting scanning memory (on i7-8700k the CPU usage went from 9% to 2%) - but the stats per player may be slightly inaccurate (i.e. may be refreshes late).
+The most optimized way to run _linux-hunter_ would be `sudo ./linux-hunter -m --mem-dirty-opt --lazy-alloc`; this way you would start it using both low CPU and memory, plus displaying _monsters_ information. In this case _linux-hunter_ will try to find MH:W _pid_ (if this fails to find the pid, you can use the `--pid <pid>` option).
+Once running press `Esc` or `q` to quit.
+
+Please note that running with experimental option `--mem-dirty-opt` should reduce the performance impact by limiting scanning memory (on i7-8700k the CPU usage went from 9% to 2%) - but the stats per player may be slightly inaccurate (i.e. may be refreshes late).
+
+Runnin with `--lazy-alloc` will massively reduce memory consumption (approximately by 90%).
 
 There are some options to help out with debugging (such as `--debug-ptrs` and `--debug-all`), if you use those I suppose you have compiled it yourself hence should have knowledge of such options (you should have looked at the code by then).
 
@@ -132,4 +137,13 @@ This work couldn't have been possible w/o previous work of:
 * [Marcus101RR](https://github.com/Marcus101RR)
 * [r00telement](https://github.com/r00telement/SmartHunter)
 * [sir-wilhelm](https://github.com/sir-wilhelm/SmartHunter)
+* [Haato](https://github.com/Haato3o/HunterPie)
+
+## Changelog
+
+* 0.0.6
+  - Support latest version of MH:W
+  - Lookup monster data via pointers (as [HunterPie](https://github.com/Haato3o/HunterPie) does) - should be better for Linux
+  - Improved UI elements and some fonts/colors
+  - Added 'LobbyStatus' lookup (works on Linux as it is)
 

@@ -45,7 +45,8 @@ namespace offsets {
 		const static uint32_t	PreviousMonsterOffset = 0x10,
 					NextMonsterOffset = 0x18,
 					MonsterStartOfStructOffset = 0x40,
-					MonsterHealthComponentOffset = 0x7670;
+					MonsterHealthComponentOffset = 0x7670,
+					MonsterNumIDOffset = 0x12280;
 	}
 
 	namespace MonsterModel {
