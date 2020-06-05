@@ -8,7 +8,8 @@ namespace mhw_lookup {
 	struct pattern_data {
 		const	memory::pattern	*player,
 					*damage,
-					*monster;
+					*monster,
+					*lobby;
 	};
 	
 	extern void get_data(const pattern_data& pd, memory::browser& mb, ui::mhw_data& d);

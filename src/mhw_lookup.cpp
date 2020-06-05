@@ -45,6 +45,18 @@ namespace {
 		return true;
 	}
 
+	// try to understand if the player is in hunt
+	bool get_data_ishunt(const memory::pattern* lobby, memory::browser& mb) {
+		// in case we can't resolve lobby, return true
+		if(!lobby || (lobby->mem_location == -1))
+			return true;
+		const auto	plobbyptr = mb.load_effective_addr_rel(lobby->mem_location, true);
+		const auto	lobbyaddr = mb.read_mem<size_t>(plobbyptr, true);
+		const bool	is_mission = mb.read_mem<uint32_t>(lobbyaddr + 0x54, true) != 0,
+				is_expedition = mb.read_mem<uint32_t>(lobbyaddr + 0x38, true) != 1;
+		return is_mission || is_expedition;
+	}
+
 	// try get players' damage (need name too)
 	bool get_data_damage(const mhw_lookup::pattern_data& pd, memory::browser& mb, ui::mhw_data& d) {
 		const auto	pnameptr = mb.load_effective_addr_rel(pd.player->mem_location, true);
@@ -149,7 +161,7 @@ void mhw_lookup::get_data(const mhw_lookup::pattern_data& pd, memory::browser& m
 	d = ui::mhw_data();
 	if(!get_data_session(pd.player, mb, d))
 		return;
-	if(pd.damage)
+	if(get_data_ishunt(pd.lobby, mb) && pd.damage)
 		get_data_damage(pd, mb, d);
 	if(pd.monster)
 		get_data_monster(pd.monster, mb, d);
