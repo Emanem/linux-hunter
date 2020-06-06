@@ -272,7 +272,18 @@ ssize_t memory::browser::find_first(const pattern& p, const bool debug_all, cons
 	return -1;
 }
 
-memory::browser::browser(const pid_t p, const bool dirty_opt, const bool lazy_alloc) : pid_(p), dirty_opt_(dirty_opt), lazy_alloc_(lazy_alloc) {
+bool memory::browser::direct_mem_read(const size_t addr, void* d, const ssize_t sz) {
+	if(-1 == pid_)
+		throw std::runtime_error("MH:W pid not set, can't use direct memory mode");
+	const struct iovec	local = { (void*)d, (size_t)sz },
+				remote = { (void*)addr, (size_t)sz };
+	const auto		rv = process_vm_readv(pid_, &local, 1, &remote, 1, 0);
+	if(rv != sz)
+		return false;
+	return true;
+}
+
+memory::browser::browser(const pid_t p, const bool dirty_opt, const bool lazy_alloc, const bool direct_mem) : pid_(p), dirty_opt_(dirty_opt), lazy_alloc_(lazy_alloc), direct_mem_(direct_mem) {
 }
 
 memory::browser::~browser() {
@@ -284,6 +295,10 @@ void memory::browser::snap(void) {
 }
 
 void memory::browser::update(void) {
+	// if we're in direct memory mode
+	// do not update
+	if(direct_mem_)
+		return;
 	// need to check memory layout
 	// usually shouldn't change much
 	// but it _does_ sometime
@@ -387,6 +402,14 @@ namespace {
 }
 
 bool memory::browser::safe_read_utf8(const size_t addr, const size_t len, std::wstring& out, const bool refresh) {
+	// if we're in direct mode, reserve a buffer and read it
+	if(direct_mem_) {
+		char	buf[len];
+		if(!direct_mem_read(addr, (void*)buf, len))
+			return false;
+		out = from_utf8(buf, len);
+		return true;
+	}
 	// pre-condition: all_regions_ is
 	// actually correctly formatted
 	// addr between boundaries is _not_
