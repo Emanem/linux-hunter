@@ -80,12 +80,12 @@ If then you've enabled the `-m` (or `--show-monsters`), another pane will appear
 Current code/logic is somehow prototype and partially optimized - please use it at your own risk.
 
 ## How it works
-_linux-hunter_ primarily operates by loading the _entire_ MH:W memory address space into its own; it then scans memory to find some _magic_ patterns. When such patterns are found, it then goes into a loop and keep on _navigating_ those patterns by de-referencing memory addresses and interpreting those according to the MH:W memory layour (i.e. player, monsters and session information).
+_linux-hunter_ primarily operates by loading the _entire_ MH:W memory address space into its own; it then scans memory to find some _magic_ patterns. When such patterns are found, it then goes into a loop and keeps on _navigating_ those patterns by de-referencing memory addresses and interpreting those according to the MH:W memory layout (i.e. player, monsters and session information).
 
 _linux-hunter_ will perform such memory navigation every _n_ time and then display on the terminal UI required information. Using different options sorts different effects:
 * `--lazy-allocs` Only copy full memory segments from HM:W process when necessary - this minimizes memory usage
-* `--mem-dirty-opt` Only refresh full memory segments from HM:W process when necessary - this minimizes memory transfer (_system_ time)
-* `-d / --direct-mem` Don't load/refresh full memory segments from MH:W process, but only the minimum required bits to de-reference memory. This option alone reduces drastically _user_ and _system_ time - we don't copy anymore memory segments. Combined with `--lazy-allocs` also reduced memory usage even further. The drawback is potential instability 
+* `--mem-dirty-opt` Only refresh full memory segments from HM:W process when necessary - this minimizes CPU usage by limiting memory transfer (_system_ time)
+* `-d / --direct-mem` Don't load/refresh full memory segments from MH:W process, but only the minimum required bits to de-reference memory. This option alone reduces drastically CPU usage for _user_ and _system_ time - we don't copy anymore memory segments. Combined with `--lazy-allocs` also reduces memory usage even further. The drawback is potential instability 
 
 ## Linux differences
 Following the main differences I had to overcome to port the logic of SmartHunter to Linux; considering the challenges below, I think I've been lucky so far.
@@ -138,7 +138,7 @@ The most optimized way to run _linux-hunter_ would be `sudo ./linux-hunter -m --
 Once running press `Esc` or `q` to quit.
 
 From version _0.0.7_ the reccomended experimental way to run _linux-hunter_ should be `sudo ./linux-hunter  -m --lazy-alloc -d`; this will reduce the memory even dramatically (order of 10s of MiB) and the CPU usage to almost 0 (both _user_ and _system_ time).
-The drawback of speciying the `-d` option (or `--direct-mem` in long form) is that it may lead to slightly more instability and slightly outdated information; see [Changelog](#changelog) for a brief description with regerd to this option.
+The drawback of speciying the `-d` option (or `--direct-mem` in long form) is that it may lead to slightly more instability and slightly outdated information; see [Changelog](#changelog) and [How it works](#how-it-works) for a brief description with regard to this option.
 
 Please note that running with experimental option `--mem-dirty-opt` should reduce the performance impact by limiting scanning memory (on i7-8700k the CPU usage went from 9% to 2%) - but the stats per player may be slightly inaccurate (i.e. may be refreshes late).
 
