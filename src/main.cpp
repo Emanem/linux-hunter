@@ -50,7 +50,7 @@ namespace {
 }
 
 namespace {
-	const char*	VERSION = "0.0.6";
+	const char*	VERSION = "0.0.7";
 
 	// settings/options management
 	pid_t		mhw_pid = -1;
@@ -60,7 +60,8 @@ namespace {
 			debug_ptrs = false,
 			debug_all = false,
 			mem_dirty_opt = false,
-			lazy_alloc = false;
+			lazy_alloc = false,
+			direct_mem = false;
 	size_t		refresh_interval = 1000;
 
 	void print_help(const char *prog, const char *version) {
@@ -69,6 +70,9 @@ namespace {
 				"-s, --save dir      Captures the specified pid into directory 'dir' and quits\n"
 				"-l, --load dir      Loads the specified capture directory 'dir' and displays\n"
 				"                    info (static - useful for debugging)\n"
+				"-d, --direct-mem    Access MH:W memory directly and dynamically, without using local\n"
+				"                    buffers - massively reduce CPU usage (both u and s) and the expenses\n"
+				"                    of potentially slightly more inconsistencies\n"
 				"    --mhw-pid p     Specifies which pid to scan memory for (usually main MH:W)\n"
 				"                    When not specified, linux-hunter will try to find it automatically\n"
 				"                    This is default behaviour\n"
@@ -96,6 +100,7 @@ namespace {
 			{"show-monsters",	no_argument,	   0,	'm'},
 			{"save",		required_argument, 0,	's'},
 			{"load",		required_argument, 0,	'l'},
+			{"direct-mem",		no_argument,	   0,	'd'},
 			{"debug-ptrs",		no_argument,	   0,	0},
 			{"debug-all",		no_argument,	   0,	0},
 			{"mem-dirty-opt",	no_argument,	   0,	0},
@@ -108,7 +113,7 @@ namespace {
 			// getopt_long stores the option index here
 			int		option_index = 0;
 
-			if(-1 == (c = getopt_long(argc, argv, "s:l:r:m", long_options, &option_index)))
+			if(-1 == (c = getopt_long(argc, argv, "ds:l:r:m", long_options, &option_index)))
 				break;
 
 			switch (c) {
@@ -130,6 +135,10 @@ namespace {
 				} else if (!std::strcmp("lazy-alloc", long_options[option_index].name)) {
 					lazy_alloc = true;
 				}
+			} break;
+
+			case 'd': {
+				direct_mem = true;
 			} break;
 
 			case 'r': {
@@ -213,10 +222,12 @@ int main(int argc, char *argv[]) {
 			std::cerr << "Found pid: " << mhw_pid << std::endl;
 		}
 		// start here...
-		memory::browser	mb(mhw_pid, mem_dirty_opt, lazy_alloc);
+		memory::browser	mb(mhw_pid, mem_dirty_opt, lazy_alloc, direct_mem);
 		// if we're in load mode fill b
 		// with content from the disk
 		if(!load_dir.empty()) {
+			if(direct_mem)
+				throw std::runtime_error("The option -d,--direct-mem is incompatile with -l,--load");
 			std::cerr << "Loading memory content from directory '" << load_dir << "'..." << std::endl;
 			mb.load(load_dir.c_str());
 			std::cerr << "done" << std::endl;

@@ -87,7 +87,8 @@ namespace memory {
 
 		pid_t			pid_;
 		bool			dirty_opt_,
-					lazy_alloc_;
+					lazy_alloc_,
+					direct_mem_;
 		std::vector<mem_region>	all_regions_;
 
 		void snap_mem_regions(std::vector<mem_region>& mr, const bool alloc_mem);
@@ -103,8 +104,10 @@ namespace memory {
 		void refresh_region(mem_region& r);
 
 		ssize_t find_first(const pattern& p, const bool debug_all, const size_t start_addr = 0);
+
+		bool direct_mem_read(const size_t addr, void* d, const ssize_t sz);
 	public:
-		browser(const pid_t p, const bool dirty_opt, const bool lazy_alloc);
+		browser(const pid_t p, const bool dirty_opt, const bool lazy_alloc, const bool direct_mem);
 
 		~browser();
 
@@ -126,6 +129,10 @@ namespace memory {
 
 		template<typename T>
 		bool safe_read_mem(const size_t addr, T& out, const bool refresh = false) {
+			// if we're in direct mode, go for it
+			if(direct_mem_) {
+				return direct_mem_read(addr, (void*)&out, sizeof(out));
+			}
 			// pre-condition: all_regions_ is
 			// actually correctly formatted
 			// addr between boundaries is _not_

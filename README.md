@@ -8,6 +8,7 @@ Prototype MH:W companion app for Linux, inspired by SmartHunter.
 * [UI](#ui)
 * [Screenshots](#screenshots)
 * [Status](#status)
+* [How it works](#how-it-works)
 * [Linux differences](#linux-differences)
   * [AoB structures](#aob-structures)
   * [Strings are longer](#strings-are-longer)
@@ -20,19 +21,22 @@ Prototype MH:W companion app for Linux, inspired by SmartHunter.
 
 ## Supported Version
 
-* 13.50.01 - Fully Supported (testing) ~~Currently the _monster_ (`-m`) lookup doesn't work, looks like the offsets have changed, will try to tackle asap~~
+* 13.50.01 - Fully Supported
 * ~~13.50.00 - Fully supported~~
 
 ## Usage
 Running the application as `./linux-hunter --help` will produce the following:
 ```
 Usage: ./linux-hunter [options]
-Executes linux-hunter 0.0.6
+Executes linux-hunter 0.0.7
 
 -m, --show-monsters Shows HP monsters data (requires slightly more CPU usage)
 -s, --save dir      Captures the specified pid into directory 'dir' and quits
 -l, --load dir      Loads the specified capture directory 'dir' and displays
                     info (static - useful for debugging)
+-d, --direct-mem    Access MH:W memory directly and dynamically, without using local
+                    buffers - massively reduce CPU usage (both u and s) and the expenses
+                    of potentially slightly more inconsistencies
     --mhw-pid p     Specifies which pid to scan memory for (usually main MH:W)
                     When not specified, linux-hunter will try to find it automatically
                     This is default behaviour
@@ -74,6 +78,14 @@ If then you've enabled the `-m` (or `--show-monsters`), another pane will appear
 
 ## Status
 Current code/logic is somehow prototype and partially optimized - please use it at your own risk.
+
+## How it works
+_linux-hunter_ primarily operates by loading the _entire_ MH:W memory address space into its own; it then scans memory to find some _magic_ patterns. When such patterns are found, it then goes into a loop and keeps on _navigating_ those patterns by de-referencing memory addresses and interpreting those according to the MH:W memory layout (i.e. player, monsters and session information).
+
+_linux-hunter_ will perform such memory navigation every _n_ time and then display on the terminal UI required information. Using different options sorts different effects:
+* `--lazy-allocs` Only copy full memory segments from HM:W process when necessary - this minimizes memory usage
+* `--mem-dirty-opt` Only refresh full memory segments from HM:W process when necessary - this minimizes CPU usage by limiting memory transfer (_system_ time)
+* `-d / --direct-mem` Don't load/refresh full memory segments from MH:W process, but only the minimum required bits to de-reference memory. This option alone reduces drastically CPU usage for _user_ and _system_ time - we don't copy anymore memory segments. Combined with `--lazy-allocs` also reduces memory usage even further. The drawback is potential instability 
 
 ## Linux differences
 Following the main differences I had to overcome to port the logic of SmartHunter to Linux; considering the challenges below, I think I've been lucky so far.
@@ -125,6 +137,9 @@ Once done, `make release` and you'll have your _linux-hunter_ ready to be runnin
 The most optimized way to run _linux-hunter_ would be `sudo ./linux-hunter -m --mem-dirty-opt --lazy-alloc`; this way you would start it using both low CPU and memory, plus displaying _monsters_ information. In this case _linux-hunter_ will try to find MH:W _pid_ (if this fails to find the pid, you can use the `--pid <pid>` option).
 Once running press `Esc` or `q` to quit.
 
+From version _0.0.7_ the reccomended experimental way to run _linux-hunter_ should be `sudo ./linux-hunter  -m --lazy-alloc -d`; this will reduce the memory even dramatically (order of 10s of MiB) and the CPU usage to almost 0 (both _user_ and _system_ time).
+The drawback of speciying the `-d` option (or `--direct-mem` in long form) is that it may lead to slightly more instability and slightly outdated information; see [Changelog](#changelog) and [How it works](#how-it-works) for a brief description with regard to this option.
+
 Please note that running with experimental option `--mem-dirty-opt` should reduce the performance impact by limiting scanning memory (on i7-8700k the CPU usage went from 9% to 2%) - but the stats per player may be slightly inaccurate (i.e. may be refreshes late).
 
 Runnin with `--lazy-alloc` will massively reduce memory consumption (approximately by 90%).
@@ -141,6 +156,8 @@ This work couldn't have been possible w/o previous work of:
 
 ## Changelog
 
+* 0.0.7
+  - Added experimental option (`-d`) to stop copying memory segments from MH:W process to _linux-hunter_; the latter now queries and _navigates_ MH:W memory _on-the-fly_ 
 * 0.0.6
   - Support latest version of MH:W
   - Lookup monster data via pointers (as [HunterPie](https://github.com/Haato3o/HunterPie) does) - should be better for Linux
