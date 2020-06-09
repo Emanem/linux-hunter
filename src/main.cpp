@@ -19,8 +19,10 @@
 #include <sstream>
 #include <getopt.h>
 #include <cstring>
+#include <memory>
 #include "memory.h"
 #include "ui.h"
+#include "wdisplay.h"
 #include "events.h"
 #include "timer.h"
 #include "mhw_lookup.h"
@@ -50,7 +52,7 @@ namespace {
 }
 
 namespace {
-	const char*	VERSION = "0.0.7";
+	const char*	VERSION = "0.0.8";
 
 	// settings/options management
 	pid_t		mhw_pid = -1;
@@ -267,7 +269,7 @@ int main(int argc, char *argv[]) {
 		if(show_monsters_data && (-1 == p3.mem_location))
 			throw std::runtime_error("Can't find AoB for patterns::Monster");
 		// main loop
-		ui::window			w;
+		std::unique_ptr<vbrush::iface>	w(wdisplay::get());
 		ui::app_data			ad{ VERSION, timer::cpu_ms()};
 		ui::mhw_data			mhwd;
 		size_t				draw_flags = 0;
@@ -287,7 +289,7 @@ int main(int argc, char *argv[]) {
 			timer::thread_tmr	tt(&ad.tm);
 			mb.update();
 			mhw_lookup::get_data(mhwpd, mb, mhwd);
-			w.draw(draw_flags, ad, mhwd);
+			ui::draw(w.get(), draw_flags, ad, mhwd);
 			size_t			cur_refresh_tm = 0;
 			do {
 				const auto 	tm_get = tt.get_wall();
