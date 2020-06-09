@@ -23,6 +23,7 @@
 #include "memory.h"
 #include "ui.h"
 #include "wdisplay.h"
+#include "fdisplay.h"
 #include "events.h"
 #include "timer.h"
 #include "mhw_lookup.h"
@@ -57,7 +58,8 @@ namespace {
 	// settings/options management
 	pid_t		mhw_pid = -1;
 	std::string	save_dir,
-			load_dir;
+			load_dir,
+			file_display;
 	bool		show_monsters_data = false,
 			debug_ptrs = false,
 			debug_all = false,
@@ -75,6 +77,12 @@ namespace {
 				"-d, --direct-mem    Access MH:W memory directly and dynamically, without using local\n"
 				"                    buffers - massively reduce CPU usage (both u and s) and the expenses\n"
 				"                    of potentially slightly more inconsistencies\n"
+				"-f, --f-display f   Writes the content of display on a file 'f', refreshing such file\n"
+				"                    every same iteration. The content of the file is a 'wchar_t' similar\n"
+				"                    to the UI, having special '#' as escape character to denote styles\n"
+				"                    and formats (see sources for usage of '#' escape sequances)\n"
+				"                    It is heavily suggested to have file 'f' under '/dev/shm' or '/tmp'\n"
+				"                    memory backed filesystem\n"	
 				"    --mhw-pid p     Specifies which pid to scan memory for (usually main MH:W)\n"
 				"                    When not specified, linux-hunter will try to find it automatically\n"
 				"                    This is default behaviour\n"
@@ -103,6 +111,7 @@ namespace {
 			{"save",		required_argument, 0,	's'},
 			{"load",		required_argument, 0,	'l'},
 			{"direct-mem",		no_argument,	   0,	'd'},
+			{"f-display",		required_argument, 0,	'f'},
 			{"debug-ptrs",		no_argument,	   0,	0},
 			{"debug-all",		no_argument,	   0,	0},
 			{"mem-dirty-opt",	no_argument,	   0,	0},
@@ -115,7 +124,7 @@ namespace {
 			// getopt_long stores the option index here
 			int		option_index = 0;
 
-			if(-1 == (c = getopt_long(argc, argv, "ds:l:r:m", long_options, &option_index)))
+			if(-1 == (c = getopt_long(argc, argv, "ds:l:r:mf:", long_options, &option_index)))
 				break;
 
 			switch (c) {
@@ -158,6 +167,10 @@ namespace {
 				load_dir = optarg;
 				if(!load_dir.empty() && (*load_dir.rbegin() == '/'))
 					load_dir.resize(load_dir.size()-1);
+			} break;
+
+			case 'f': {
+				file_display = optarg;
 			} break;
 
 			case 'm': {
@@ -269,7 +282,8 @@ int main(int argc, char *argv[]) {
 		if(show_monsters_data && (-1 == p3.mem_location))
 			throw std::runtime_error("Can't find AoB for patterns::Monster");
 		// main loop
-		std::unique_ptr<vbrush::iface>	w(wdisplay::get());
+		std::unique_ptr<vbrush::iface>	w_dpy(wdisplay::get()),
+						f_dpy((file_display.empty()) ? 0 : fdisplay::get(file_display.c_str()));
 		ui::app_data			ad{ VERSION, timer::cpu_ms()};
 		ui::mhw_data			mhwd;
 		size_t				draw_flags = 0;
@@ -289,7 +303,8 @@ int main(int argc, char *argv[]) {
 			timer::thread_tmr	tt(&ad.tm);
 			mb.update();
 			mhw_lookup::get_data(mhwpd, mb, mhwd);
-			ui::draw(w.get(), draw_flags, ad, mhwd);
+			ui::draw(w_dpy.get(), draw_flags, ad, mhwd);
+			if(f_dpy) ui::draw(f_dpy.get(), draw_flags, ad, mhwd);
 			size_t			cur_refresh_tm = 0;
 			do {
 				const auto 	tm_get = tt.get_wall();

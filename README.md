@@ -28,7 +28,7 @@ Prototype MH:W companion app for Linux, inspired by SmartHunter.
 Running the application as `./linux-hunter --help` will produce the following:
 ```
 Usage: ./linux-hunter [options]
-Executes linux-hunter 0.0.7
+Executes linux-hunter 0.0.8
 
 -m, --show-monsters Shows HP monsters data (requires slightly more CPU usage)
 -s, --save dir      Captures the specified pid into directory 'dir' and quits
@@ -37,6 +37,12 @@ Executes linux-hunter 0.0.7
 -d, --direct-mem    Access MH:W memory directly and dynamically, without using local
                     buffers - massively reduce CPU usage (both u and s) and the expenses
                     of potentially slightly more inconsistencies
+-f, --f-display f   Writes the content of display on a file 'f', refreshing such file
+                    every same iteration. The content of the file is a 'wchar_t' similar
+                    to the UI, having special '#' as escape character to denote styles
+                    and formats (see sources for usage of '#' escape sequances)
+                    It is heavily suggested to have file 'f' under '/dev/shm' or '/tmp'
+                    memory backed filesystem
     --mhw-pid p     Specifies which pid to scan memory for (usually main MH:W)
                     When not specified, linux-hunter will try to find it automatically
                     This is default behaviour
@@ -156,6 +162,8 @@ This work couldn't have been possible w/o previous work of:
 
 ## Changelog
 
+* 0.0.8
+  - Added option (`-f` or `-f-display`) to output the display as a `wchar_t` file so that can be read by other processes independently. This should work along the lines of _/procfs_ filesystem and it's hevaily reccomended to set the value of this option to a _ramfs_ type of directory (i.e. like '/dev/shm/linux-hunter.out' or '/tmp/linux-hunter.out')
 * 0.0.7
   - Added experimental option (`-d`) to stop copying memory segments from MH:W process to _linux-hunter_; the latter now queries and _navigates_ MH:W memory _on-the-fly_ 
 * 0.0.6

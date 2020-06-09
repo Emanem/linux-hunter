@@ -15,14 +15,15 @@
     along with linux-hunter.  If not, see <https://www.gnu.org/licenses/>.
  * */
 
-#ifndef _WDISPLAY_H_
-#define _WDISPLAY_H_
+#ifndef _FDISPLAY_H_
+#define _FDISPLAY_H_
 
 #include "vbrush.h"
 
-namespace wdisplay {
-	extern vbrush::iface* get(void);
+namespace fdisplay {
+	extern vbrush::iface* get(const char* fname);
 }
 
-#endif //_WDISPLAY_H_
+
+#endif //_FDISPLAY_H_
 
