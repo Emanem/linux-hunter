@@ -188,6 +188,8 @@ namespace {
 			tmpfh_ = -1;
 			if(std::rename(tmpfile_.c_str(), fname_.c_str()))
 				throw std::runtime_error("Can't swap display file");
+			if(chmod(fname_.c_str(), S_IRWXU|S_IRGRP|S_IROTH))
+				throw std::runtime_error("Can't change permissions of display file");
 		}
 	};
 }
