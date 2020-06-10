@@ -16,6 +16,7 @@
  * */
 
 #include "fdisplay.h"
+#include "hashtext_fmt.h"
 #include <string>
 #include <cstring>
 #include <cstdio>
@@ -40,6 +41,14 @@ namespace {
 		      			basedir_;
 		std::string		tmpfile_;
 		int			tmpfh_;
+
+		void write_attr(const uint32_t attr_mask) {
+			wchar_t	buf[2];
+			buf[0] = L'#';
+			buf[1] = (wchar_t)attr_mask;
+			if(8 != write(tmpfh_, buf, 8))
+					throw std::runtime_error("Can't write display file");
+		}
 	public:
 		fimpl(const char* fname) : fname_(fname), basedir_(get_basedir(fname)), tmpfh_(-1) {
 			if(fname_.empty())
@@ -60,7 +69,9 @@ namespace {
 			// create a tmp file
 			char	buf[256];
 			std::strncpy(buf, (basedir_ + "XXXXXX").c_str(), 255);
-			tmpfile_ = mktemp(buf);
+			if(-1 == mkstemp(buf))
+				return false;
+			tmpfile_ = buf;
 			tmpfh_ = open(tmpfile_.c_str(), O_CREAT|O_WRONLY, S_IRWXU|S_IRGRP|S_IROTH);
 			if(-1 == tmpfh_)
 				return false;
@@ -77,11 +88,26 @@ namespace {
 		}
 
 		virtual void draw_text(const wchar_t* t, const ssize_t len) {
+			size_t		total_written = 0;
+			const wchar_t	*esc = std::wcschr(t, L'#');
+			while(esc) {
+				const size_t	sz = esc - t;
+				const ssize_t	rv = write(tmpfh_, t, sz*sizeof(wchar_t));
+				if(rv != (ssize_t)(sz*sizeof(wchar_t)))
+					throw std::runtime_error("Can't write display file");
+				// then write escaped '#'
+				if(8 != write(tmpfh_, L"##", 8))
+					throw std::runtime_error("Can't write display file");
+				t = esc + 1;
+				esc = std::wcschr(t, L'#');
+				total_written += sz+1;
+			}
 			const size_t	sz = std::wcslen(t);
 			const ssize_t	rv = write(tmpfh_, t, sz*sizeof(wchar_t));
 			if(rv != (ssize_t)(sz*sizeof(wchar_t)))
 				throw std::runtime_error("Can't write display file");
-			const ssize_t	leftover = (len > 0) ? len - (ssize_t)sz : 0;
+			total_written += sz;
+			const ssize_t	leftover = (len > 0) ? len - (ssize_t)total_written : 0;
 			if(leftover > 0) {
 				// we have some leftover empty chars
 				const static wchar_t	*W_SPACE = L" ";
@@ -99,9 +125,60 @@ namespace {
 		}
 
 		virtual void set_attr_on(const vbrush::iface::attr a) {
+			switch(a) {
+			case BOLD: {
+				write_attr(ht_fmt::BOLD_ON);
+			} break;
+			case REVERSE: {
+				write_attr(ht_fmt::REVERSE_ON);
+			} break;
+			case DIM: {
+				write_attr(ht_fmt::DIM_ON);
+			} break;
+			case C_BLUE: {
+				write_attr(ht_fmt::BLUE_ON);
+			} break;
+			case C_MAGENTA: {
+				write_attr(ht_fmt::MAGENTA_ON);
+			} break;
+			case C_YELLOW: {
+				write_attr(ht_fmt::YELLOW_ON);
+			} break;
+			case C_GREEN: {
+				write_attr(ht_fmt::GREEN_ON);
+			} break;
+			default:
+				break;
+			}
 		}
 
 		virtual void set_attr_off(const vbrush::iface::attr a) {
+			switch(a) {
+			case BOLD: {
+				write_attr(ht_fmt::BOLD_OFF);
+			} break;
+			case REVERSE: {
+				write_attr(ht_fmt::REVERSE_OFF);
+			} break;
+			case DIM: {
+				write_attr(ht_fmt::DIM_OFF);
+			} break;
+			case C_BLUE: {
+				write_attr(ht_fmt::BLUE_OFF);
+			} break;
+			case C_MAGENTA: {
+				write_attr(ht_fmt::MAGENTA_OFF);
+			} break;
+			case C_YELLOW: {
+				write_attr(ht_fmt::YELLOW_OFF);
+			} break;
+			case C_GREEN: {
+				write_attr(ht_fmt::GREEN_OFF);
+			} break;
+
+			default:
+				break;
+			}
 		}
 
 		virtual void display(void) {
