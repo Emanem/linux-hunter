@@ -41,6 +41,7 @@ namespace {
 		      			basedir_;
 		std::string		tmpfile_;
 		int			tmpfh_;
+		uint32_t		iter_;
 
 		void write_attr(const uint32_t attr_mask) {
 			wchar_t	buf[2];
@@ -50,7 +51,7 @@ namespace {
 					throw std::runtime_error("Can't write display file");
 		}
 	public:
-		fimpl(const char* fname) : fname_(fname), basedir_(get_basedir(fname)), tmpfh_(-1) {
+		fimpl(const char* fname) : fname_(fname), basedir_(get_basedir(fname)), tmpfh_(-1), iter_(0) {
 			if(fname_.empty())
 				throw std::runtime_error("Empty file display name provided");
 		}
@@ -66,15 +67,15 @@ namespace {
 		}
 
 		virtual bool init(void) {
+			// this logic should be ok for now; ideally should use
+			// opne(...) with O_TMPFILE and then renameat(...)
 			// create a tmp file
 			char	buf[256];
-			std::strncpy(buf, (basedir_ + "XXXXXX").c_str(), 255);
-			if(-1 == mkstemp(buf))
-				return false;
-			tmpfile_ = buf;
-			tmpfh_ = open(tmpfile_.c_str(), O_CREAT|O_WRONLY, S_IRWXU|S_IRGRP|S_IROTH);
+			std::snprintf(buf, 255, "%slh-%dXXXXXX", basedir_.c_str(), iter_++);
+			tmpfh_ = mkstemp(buf);
 			if(-1 == tmpfh_)
 				return false;
+			tmpfile_ = buf;
 			return true;
 		}
 
@@ -186,10 +187,10 @@ namespace {
 				throw std::runtime_error("Can't display unintialized file");
 			close(tmpfh_);
 			tmpfh_ = -1;
+			if(chmod(tmpfile_.c_str(), S_IRWXU|S_IRGRP|S_IROTH))
+				throw std::runtime_error("Can't change permissions of display file");
 			if(std::rename(tmpfile_.c_str(), fname_.c_str()))
 				throw std::runtime_error("Can't swap display file");
-			if(chmod(fname_.c_str(), S_IRWXU|S_IRGRP|S_IROTH))
-				throw std::runtime_error("Can't change permissions of display file");
 		}
 	};
 }
