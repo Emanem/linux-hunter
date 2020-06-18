@@ -6,6 +6,7 @@ Prototype MH:W companion app for Linux, inspired by SmartHunter.
 * [Supported Version](#supported-version)
 * [Usage](#usage)
 * [UI](#ui)
+* [Vulkan Overlay](#vulkan-overlay)
 * [Screenshots](#screenshots)
 * [Status](#status)
 * [How it works](#how-it-works)
@@ -28,7 +29,7 @@ Prototype MH:W companion app for Linux, inspired by SmartHunter.
 Running the application as `./linux-hunter --help` will produce the following:
 ```
 Usage: ./linux-hunter [options]
-Executes linux-hunter 0.0.7
+Executes linux-hunter 0.0.8
 
 -m, --show-monsters Shows HP monsters data (requires slightly more CPU usage)
 -s, --save dir      Captures the specified pid into directory 'dir' and quits
@@ -37,6 +38,12 @@ Executes linux-hunter 0.0.7
 -d, --direct-mem    Access MH:W memory directly and dynamically, without using local
                     buffers - massively reduce CPU usage (both u and s) and the expenses
                     of potentially slightly more inconsistencies
+-f, --f-display f   Writes the content of display on a file 'f', refreshing such file
+                    every same iteration. The content of the file is a 'wchar_t' similar
+                    to the UI, having special '#' as escape character to denote styles
+                    and formats (see sources for usage of '#' escape sequances)
+                    It is heavily suggested to have file 'f' under '/dev/shm' or '/tmp'
+                    memory backed filesystem
     --mhw-pid p     Specifies which pid to scan memory for (usually main MH:W)
                     When not specified, linux-hunter will try to find it automatically
                     This is default behaviour
@@ -68,8 +75,24 @@ The following rows will represent the players and the absolute/relative damage (
 
 If then you've enabled the `-m` (or `--show-monsters`), another pane will appear with the monsters currently tracked by the game and their current, total and % _HP_.
 
+## Vulkan Overlay
+Another way to use _linux-hunter_ if to create a _status_ output display file (`-f` or `--f-display`) and have a utility such as [vkdto](https://github.com/Emanem/vkdto) to read such file and update the main _MH:W_ window with overlay.
+
+One could setup the _MH:W_ launch window on Steam as following:
+```
+VKDTO_HUD=1 VKDTO_FILE=/dev/shm/linux-hunter %command%
+```
+and then, once the game is up and running, execute _linux-hunter_ from the terminal with following options
+```
+sudo ./linux-hunter -m --lazy-alloc -d -f /dev/shm/linux-hunter
+```
+This way _vkdto_ will dynamically display the overlay with the content from _linux-hunter_ and you will see it without needing to keep the _terminal_ window in foreground (see below a screenshot with both overlay in action in foreground and background _linux-hunter_ in the terminal).
+
+Currently _vkdto_ is still in alpha stages and you can modify some options such the text size - please refer to [vkdto](https://github.com/Emanem/vkdto) github page for more info about it.
+
 ## Screenshots
 
+![vkdto Overlay](https://raw.githubusercontent.com/Emanem/linux-hunter/master/pics/vkdto_overlay.jpg)
 ![During Hunt](https://raw.githubusercontent.com/Emanem/linux-hunter/master/pics/hunt0.jpg)
 ![Before Hunt](https://raw.githubusercontent.com/Emanem/linux-hunter/master/pics/start_hunt.jpg)
 ![Mid Hunt](https://raw.githubusercontent.com/Emanem/linux-hunter/master/pics/mid_hunt.jpg)
@@ -156,6 +179,8 @@ This work couldn't have been possible w/o previous work of:
 
 ## Changelog
 
+* 0.0.8
+  - Added option (`-f` or `-f-display`) to output the display as a `wchar_t` file so that can be read by other processes independently. This should work along the lines of _/procfs_ filesystem and it's hevaily reccomended to set the value of this option to a _ramfs_ type of directory (i.e. like '/dev/shm/linux-hunter.out' or '/tmp/linux-hunter.out')
 * 0.0.7
   - Added experimental option (`-d`) to stop copying memory segments from MH:W process to _linux-hunter_; the latter now queries and _navigates_ MH:W memory _on-the-fly_ 
 * 0.0.6

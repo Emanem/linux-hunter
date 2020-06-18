@@ -145,7 +145,7 @@ namespace mhw_lookup {
                 { L"em124_00", 79,
 		"Velkhana" },
                 { L"em125_00", 80,
-		"namielle" },
+		"Namielle" },
                 { L"em126_00", 81,
 		"Shara Ishvalda" },
                 { L"em127_00", 23,

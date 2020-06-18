@@ -1,43 +1,9 @@
 #include "ui.h"
-#include <cstring>
-#include <cctype>
 
-namespace {
-	int PLAYER_COLORS[] = { 1, 2, 3, 4 };
-}
-
-// colors list at https://stackoverflow.com/questions/47686906/ncurses-init-color-has-no-effect
-
-ui::window::window() : w_(initscr()) {
-	// this is needed for ncursesw to print out
-	// wchar_t ...
-	setlocale(LC_CTYPE, "");
-	if(has_colors()) {
-		use_default_colors();
-		start_color();
-		init_pair(PLAYER_COLORS[0], COLOR_BLUE, 16);
-		init_pair(PLAYER_COLORS[1], COLOR_MAGENTA, 16);
-		init_pair(PLAYER_COLORS[2], COLOR_YELLOW, 16);
-		init_pair(PLAYER_COLORS[3], COLOR_GREEN, 16);
-	}
-}
-
-ui::window::~window() {
-	endwin();
-}
-
-void ui::window::draw(const size_t flags, const app_data& ad, const mhw_data& d) {
-	clear();
+extern void ui::draw(vbrush::iface* b, const size_t flags, const app_data& ad, const mhw_data& d) {
 	char		buf[256]; // local buffer for strings
-	int 		row = 0, // number of terminal rows
-        		col = 0; // number of terminal columns
-        getmaxyx(stdscr, row, col);      /* find the boundaries of the screeen */
-	// TODO check we have enough space to display
-	if(col < 64 || row < 15) {
-		mvprintw(0, 0, "Need at least a screen of 64x15 (%d/%d)", col, row);
-		refresh();
+	if(!b->init())
 		return;
-	}
 	/*
 	24                      
 	XXXXXXXXXXXXXXXXXXXXXXXX
@@ -51,95 +17,93 @@ void ui::window::draw(const size_t flags, const app_data& ad, const mhw_data& d)
 	EEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEIIIIDDDDDDDDDDPPPPPP
 	 */ 
 	// print title
-	int	base_row = 0;
 	{
-		int	xoffset = 0;
 		std::snprintf(buf, 256, "linux-hunter %s              (%4ld/%4ld/%4ld w/u/s)", ad.version, ad.tm.wall, ad.tm.user, ad.tm.system);
-		mvprintw(base_row++, xoffset, "%-64s", buf);
+		b->draw_text(buf);
+		b->next_row();
 	}
 	// print main stats
 	{
-		int	xoffset = 0;
-		mvprintw(base_row, xoffset, "SessionId:[");
-		xoffset += 11;
-		std::snprintf(buf, 13, "%ls", d.session_id.c_str());
-		attron(A_BOLD);
-		mvprintw(base_row, xoffset, "%s", buf);
-		attroff(A_BOLD);
-		xoffset += 12;
-		mvprintw(base_row, xoffset, "] Host:[", buf);
-		xoffset += 8;
-		attron(A_BOLD);
-		mvaddwstr(base_row, xoffset, d.host_name.c_str());
-		attroff(A_BOLD);
-		// use wcslen because the string may have
-		// many unused \0 at the end
-		xoffset += std::wcslen(d.host_name.c_str());
-		mvprintw(base_row, xoffset, "]");
-		base_row += 2;
+		b->draw_text("SessionId:[");
+		b->set_attr_on(vbrush::iface::attr::BOLD);
+		b->draw_text(d.session_id.c_str());
+		b->set_attr_off(vbrush::iface::attr::BOLD);
+		b->draw_text("] Host:[");
+		b->set_attr_on(vbrush::iface::attr::BOLD);
+		b->draw_text(d.host_name.c_str());
+		b->set_attr_off(vbrush::iface::attr::BOLD);
+		b->draw_text("]");
+		b->next_row(2);
 	}
 	// print header
 	{
-		attron(A_REVERSE);
-		mvprintw(base_row++, 0, "%-32s%-4s%-10s%-8s", "Player Name", "Id", "Damage", "%");
-		attroff(A_REVERSE);
+		std::snprintf(buf, 256, "%-32s%-4s%-10s%-8s", "Player Name", "Id", "Damage", "%");
+		b->set_attr_on(vbrush::iface::attr::REVERSE);
+		b->draw_text(buf);
+		b->set_attr_off(vbrush::iface::attr::REVERSE);
+		b->next_row();
 	}
 	// compute total damage
 	int	total_damage = 0;
 	for(size_t i = 0; i < sizeof(d.players)/sizeof(d.players[0]); ++i)
 		total_damage += (d.players[i].used) ? d.players[i].damage : 0;
 	// print players data
-	for(size_t i = 0; i < sizeof(d.players)/sizeof(d.players[0]); ++i, ++base_row) {
+	static const vbrush::iface::attr v_colors[] = { vbrush::iface::attr::C_BLUE, vbrush::iface::attr::C_MAGENTA, vbrush::iface::attr::C_YELLOW, vbrush::iface::attr::C_GREEN };
+	for(size_t i = 0; i < sizeof(d.players)/sizeof(d.players[0]); ++i, b->next_row()) {
 		if(!d.players[i].used) {
-			attron(A_DIM);
-			mvprintw(base_row, 0, "%-32s%-4d                  ", "<N/A>", i);
-			attroff(A_DIM);
+			std::snprintf(buf, 256, "%-32s%-4d                  ", "<N/A>", (int)i);
+			b->set_attr_on(vbrush::iface::attr::DIM);
+			b->draw_text(buf);
+			b->set_attr_off(vbrush::iface::attr::DIM);
 			continue;
 		}
-		int		xoffset = 0;
-		const auto	name_attr = (d.players[i].left_session) ? A_DIM : COLOR_PAIR(PLAYER_COLORS[i]);
-		attron(name_attr);
-		mvaddwstr(base_row, xoffset, (d.players[i].left_session) ? L"Left the session" : d.players[i].name.c_str());
-		xoffset += 32;
+		const auto	name_attr = (d.players[i].left_session) ? vbrush::iface::attr::DIM : v_colors[i];
+		b->set_attr_on(name_attr);
+		b->draw_text((d.players[i].left_session) ? L"Left the session" : d.players[i].name.c_str(), 32);
 		if(!d.players[i].left_session)
-			attroff(name_attr);
-		mvprintw(base_row, xoffset, "%-4d", i);
-		xoffset += 4;
-		mvprintw(base_row, xoffset, "%10d", d.players[i].damage);
-		xoffset += 10;
-		mvprintw(base_row, xoffset, "%8.2f", (total_damage > 0) ? 100.0*d.players[i].damage/total_damage : 0);
-		xoffset += 6;
+			b->set_attr_off(name_attr);
+		std::snprintf(buf, 256, "%-4d", (int)i);
+		b->draw_text(buf);
+		std::snprintf(buf, 256, "%10d", d.players[i].damage);
+		b->draw_text(buf);
+		std::snprintf(buf, 256, "%8.2f", (total_damage > 0) ? 100.0*d.players[i].damage/total_damage : 0);
+		b->draw_text(buf);
 		if(d.players[i].left_session)
-			attroff(name_attr);
+			b->set_attr_off(name_attr);
 	}
 	// now just the total
 	{
-		attron(A_BOLD);
-		mvprintw(base_row++, 0, "%-32s%-4s%10d%8s", "Total", "", total_damage, (total_damage > 0) ? "100.00" : "0.0");
-		attroff(A_BOLD);
+		std::snprintf(buf, 256, "%-32s%-4s%10d%8s", "Total", "", total_damage, (total_damage > 0) ? "100.00" : "0.0");
+		b->set_attr_on(vbrush::iface::attr::BOLD);
+		b->draw_text(buf);
+		b->set_attr_off(vbrush::iface::attr::BOLD);
+		b->next_row(2);
 	}
-	base_row++;
 	// flasg to check monster data
 	if(flags & draw_flags::SHOW_MONSTER_DATA) {
 		// then Monsters - first header
-		attron(A_REVERSE);
-		mvprintw(base_row++, 0, "%-32s%-14s%-8s", "Monster Name", "HP", "%");
-		attroff(A_REVERSE);
+		std::snprintf(buf, 256, "%-32s%-14s%-8s", "Monster Name", "HP", "%");
+		b->set_attr_on(vbrush::iface::attr::REVERSE);
+		b->draw_text(buf);
+		b->set_attr_off(vbrush::iface::attr::REVERSE);
+		b->next_row();
 		// print the monster data
 		const int	max_monsters = sizeof(d.monsters)/sizeof(d.monsters[0]);
 		int		cur_monster = 0;
-		while((base_row < row) && (cur_monster < max_monsters)) {
+		while(cur_monster < max_monsters) {
 			const mhw_data::monster_info&	mi = d.monsters[cur_monster];
 			if(!mi.used) {
 				++cur_monster;
 				continue;
 			}
-			if(mi.hp_current <= 0.001) attron(A_DIM);
-			mvprintw(base_row++, 0, "%-32s %6d/%6d%8.2f", mi.name, (int)mi.hp_current, (int)mi.hp_total, 100.0*mi.hp_current/mi.hp_total);
-			if(mi.hp_current <= 0.001) attroff(A_DIM);
+			if(mi.hp_current <= 0.001) b->set_attr_on(vbrush::iface::attr::DIM);
+			std::snprintf(buf, 256, "%-32s %6d/%6d%8.2f", mi.name, (int)mi.hp_current, (int)mi.hp_total, 100.0*mi.hp_current/mi.hp_total);
+			b->draw_text(buf);
+			if(mi.hp_current <= 0.001) b->set_attr_off(vbrush::iface::attr::DIM);
 			++cur_monster;
+			b->next_row();
 		}
 	}
-	refresh();
+	b->display();
 }
 

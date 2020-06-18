@@ -94,7 +94,9 @@ namespace {
 	// try get a single monster's data
 	bool get_data_single_monster(const size_t maddr, memory::browser& mb, ui::mhw_data::monster_info& m) {
 		const auto	realmaddr = maddr + offsets::Monster::MonsterStartOfStructOffset + offsets::Monster::MonsterHealthComponentOffset;
-		const auto	hcompaddr = mb.read_mem<size_t>(maddr + offsets::Monster::MonsterHealthComponentOffset, true);
+		size_t		hcompaddr = 0;
+		if(!mb.safe_read_mem<size_t>(maddr + offsets::Monster::MonsterHealthComponentOffset, hcompaddr, true))
+			return false;
 		const auto	id = mb.read_utf8(realmaddr + offsets::MonsterModel::IdOffset + 0x0c, offsets::MonsterModel::IdLength, true);
 		const auto	numid = mb.read_mem<uint32_t>(maddr + offsets::Monster::MonsterNumIDOffset, true);
 		// according to SmartHunter/HunterPie, we need to split the id string

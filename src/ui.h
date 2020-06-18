@@ -2,8 +2,8 @@
 #define _UI_H_
 
 #include <string>
-#include <ncurses.h>
 #include "timer.h"
+#include "vbrush.h"
 
 namespace ui {
 	struct app_data {
@@ -37,15 +37,7 @@ namespace ui {
 		SHOW_MONSTER_DATA = 1
 	};
 
-	class window {
-		WINDOW 	*w_;
-	public:
-		window();
-
-		~window();
-
-		void draw(const size_t flags, const app_data& ad, const mhw_data& d);
-	};
+	extern void draw(vbrush::iface* b, const size_t flags, const app_data& ad, const mhw_data& d);
 }
 
 #endif // _UI_H_
