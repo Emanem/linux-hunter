@@ -76,7 +76,7 @@ The following rows will represent the players and the absolute/relative damage (
 If then you've enabled the `-m` (or `--show-monsters`), another pane will appear with the monsters currently tracked by the game and their current, total and % _HP_.
 
 ## Vulkan Overlay
-Another way to use _linux-hunter_ if to create a _status_ output display file (`-f` or `--f-display`) and have a utility such as [vkdto](https://github.com/Emanem/vkdto) to read such file and update the main _MH:W_ window with overlay.
+Another way to use _linux-hunter_ is to create a _status_ output display file (`-f` or `--f-display`) and have a utility such as [vkdto](https://github.com/Emanem/vkdto) to read such file and update the main _MH:W_ window with overlay.
 
 One could setup the _MH:W_ launch window on Steam as following:
 ```
@@ -87,8 +87,9 @@ and then, once the game is up and running, execute _linux-hunter_ from the termi
 sudo ./linux-hunter -m --lazy-alloc -d -f /dev/shm/linux-hunter
 ```
 This way _vkdto_ will dynamically display the overlay with the content from _linux-hunter_ and you will see it without needing to keep the _terminal_ window in foreground (see below a screenshot with both overlay in action in foreground and background _linux-hunter_ in the terminal).
+Please note that the _status_ file should be created on a _memory_ device (reccomended `/dev/shm` or `/tmp`) - otherwise this may overutilize the physical filesystem.
 
-Currently _vkdto_ is still in alpha stages and you can modify some options such the text size - please refer to [vkdto](https://github.com/Emanem/vkdto) github page for more info about it.
+Currently _vkdto_ is still in alpha stages and you can't modify some options such the text size - please refer to [vkdto](https://github.com/Emanem/vkdto) github page for more info about it.
 
 ## Screenshots
 
