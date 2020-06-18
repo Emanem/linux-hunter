@@ -86,12 +86,13 @@ and then, once the game is up and running, execute _linux-hunter_ from the termi
 ```
 sudo ./linux-hunter -m --lazy-alloc -d -f /dev/shm/linux-hunter
 ```
-This way _vkdto_ will dynamically display the overlay with the content from _linux-hunter_ and you will see it without needing to keep the _terminal_ window in foreground.
+This way _vkdto_ will dynamically display the overlay with the content from _linux-hunter_ and you will see it without needing to keep the _terminal_ window in foreground (see below a screenshot with both overlay in action in foreground and background _linux-hunter_ in the terminal).
 
 Currently _vkdto_ is still in alpha stages and you can modify some options such the text size - please refer to [vkdto](https://github.com/Emanem/vkdto) github page for more info about it.
 
 ## Screenshots
 
+![vkdto Overlay](https://raw.githubusercontent.com/Emanem/linux-hunter/master/pics/vkdto_overlay.jpg)
 ![During Hunt](https://raw.githubusercontent.com/Emanem/linux-hunter/master/pics/hunt0.jpg)
 ![Before Hunt](https://raw.githubusercontent.com/Emanem/linux-hunter/master/pics/start_hunt.jpg)
 ![Mid Hunt](https://raw.githubusercontent.com/Emanem/linux-hunter/master/pics/mid_hunt.jpg)
