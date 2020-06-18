@@ -6,6 +6,7 @@ Prototype MH:W companion app for Linux, inspired by SmartHunter.
 * [Supported Version](#supported-version)
 * [Usage](#usage)
 * [UI](#ui)
+* [Vulkan Overlay](#vulkan-overlay)
 * [Screenshots](#screenshots)
 * [Status](#status)
 * [How it works](#how-it-works)
@@ -73,6 +74,21 @@ The second row displays the MH:W session id (if any) and the owner of such sessi
 The following rows will represent the players and the absolute/relative damage (currently they may display _NaN_ when not in a hunt).
 
 If then you've enabled the `-m` (or `--show-monsters`), another pane will appear with the monsters currently tracked by the game and their current, total and % _HP_.
+
+## Vulkan Overlay
+Another way to use _linux-hunter_ if to create a _status_ output display file (`-f` or `--f-display`) and have a utility such as [vkdto](https://github.com/Emanem/vkdto) to read such file and update the main _MH:W_ window with overlay.
+
+One could setup the _MH:W_ launch window on Steam as following:
+```
+VKDTO_HUD=1 VKDTO_FILE=/dev/shm/linux-hunter %command%
+```
+and then, once the game is up and running, execute _linux-hunter_ from the terminal with following options
+```
+sudo ./linux-hunter -m --lazy-alloc -d -f /dev/shm/linux-hunter
+```
+This way _vkdto_ will dynamically display the overlay with the content from _linux-hunter_ and you will see it without needing to keep the _terminal_ window in foreground.
+
+Currently _vkdto_ is still in alpha stages and you can modify some options such the text size - please refer to [vkdto](https://github.com/Emanem/vkdto) github page for more info about it.
 
 ## Screenshots
 
