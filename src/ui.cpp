@@ -77,16 +77,15 @@ extern void ui::draw(vbrush::iface* b, const size_t flags, const app_data& ad, c
 		b->set_attr_on(vbrush::iface::attr::BOLD);
 		b->draw_text(buf);
 		b->set_attr_off(vbrush::iface::attr::BOLD);
-		b->next_row(2);
 	}
 	// flasg to check monster data
 	if(flags & draw_flags::SHOW_MONSTER_DATA) {
+		b->next_row(2);
 		// then Monsters - first header
 		std::snprintf(buf, 256, "%-32s%-14s%-8s", "Monster Name", "HP", "%");
 		b->set_attr_on(vbrush::iface::attr::REVERSE);
 		b->draw_text(buf);
 		b->set_attr_off(vbrush::iface::attr::REVERSE);
-		b->next_row();
 		// print the monster data
 		const int	max_monsters = sizeof(d.monsters)/sizeof(d.monsters[0]);
 		int		cur_monster = 0;
@@ -96,12 +95,12 @@ extern void ui::draw(vbrush::iface* b, const size_t flags, const app_data& ad, c
 				++cur_monster;
 				continue;
 			}
+			b->next_row();
 			if(mi.hp_current <= 0.001) b->set_attr_on(vbrush::iface::attr::DIM);
 			std::snprintf(buf, 256, "%-32s %6d/%6d%8.2f", mi.name, (int)mi.hp_current, (int)mi.hp_total, 100.0*mi.hp_current/mi.hp_total);
 			b->draw_text(buf);
 			if(mi.hp_current <= 0.001) b->set_attr_off(vbrush::iface::attr::DIM);
 			++cur_monster;
-			b->next_row();
 		}
 	}
 	b->display();
