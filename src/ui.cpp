@@ -18,7 +18,7 @@ extern void ui::draw(vbrush::iface* b, const size_t flags, const app_data& ad, c
 	 */ 
 	// print title
 	{
-		std::snprintf(buf, 256, "linux-hunter %s              (%4ld/%4ld/%4ld w/u/s)", ad.version, ad.tm.wall, ad.tm.user, ad.tm.system);
+		std::snprintf(buf, 256, "linux-hunter %-19s(%4ld/%4ld/%4ld w/u/s)", ad.version, ad.tm.wall, ad.tm.user, ad.tm.system);
 		b->draw_text(buf);
 		b->next_row();
 	}
