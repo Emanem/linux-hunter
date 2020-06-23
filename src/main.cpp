@@ -20,6 +20,7 @@
 #include <getopt.h>
 #include <cstring>
 #include <memory>
+#include <csignal>
 #include "memory.h"
 #include "ui.h"
 #include "wdisplay.h"
@@ -53,7 +54,7 @@ namespace {
 }
 
 namespace {
-	const char*	VERSION = "0.0.8";
+	const char*	VERSION = "0.0.8.1";
 
 	// settings/options management
 	pid_t		mhw_pid = -1;
@@ -212,10 +213,23 @@ namespace {
 			return false;
 		}
 	};
+
+	void 	(*prev_sigint_handler)(int) = 0;
+	bool	run(true);
+
+	void sigint_handler(int signal) {
+		run = false;
+		// reset to previous handler
+		if(prev_sigint_handler)
+			std::signal(SIGINT, prev_sigint_handler);
+	}
 }
 
 int main(int argc, char *argv[]) {
 	try {
+		// initialize sigint
+		prev_sigint_handler = std::signal(SIGINT, sigint_handler);
+		// lookup patterns
 		memory::pattern	p0(patterns::PlayerName),
 				p1(patterns::CurrentPlayerName),
 				p2(patterns::PlayerDamage),
@@ -290,7 +304,6 @@ int main(int argc, char *argv[]) {
 		if(show_monsters_data)
 			draw_flags |= ui::draw_flags::SHOW_MONSTER_DATA;
 		mhw_lookup::pattern_data	mhwpd{ &p6, &p2, (show_monsters_data) ? &p3 : 0, &p7 };
-		bool				run = true;
 		keyb_proc			kp(run);
 		// if we don't perform clear, the lazy_alloc
 		// option would be rendered useless because
