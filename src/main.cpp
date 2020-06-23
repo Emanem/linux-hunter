@@ -21,7 +21,6 @@
 #include <cstring>
 #include <memory>
 #include <csignal>
-#include <atomic>
 #include "memory.h"
 #include "ui.h"
 #include "wdisplay.h"
@@ -192,9 +191,9 @@ namespace {
 
 namespace {
 	class keyb_proc : public events::fd_proc {
-		std::atomic<bool>&	run_;
+		bool&	run_;
 	public:
-		keyb_proc(std::atomic<bool>& r) : events::fd_proc(STDIN_FILENO), run_(r) {
+		keyb_proc(bool& r) : events::fd_proc(STDIN_FILENO), run_(r) {
 		}
 
 		virtual bool on_data(const char* p, const size_t sz) const {
@@ -215,8 +214,8 @@ namespace {
 		}
 	};
 
-	void 			(*prev_sigint_handler)(int) = 0;
-	std::atomic<bool>	run(true);
+	void 	(*prev_sigint_handler)(int) = 0;
+	bool	run(true);
 
 	void sigint_handler(int signal) {
 		run = false;
