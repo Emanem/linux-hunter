@@ -76,7 +76,7 @@ namespace {
 				"-l, --load dir      Loads the specified capture directory 'dir' and displays\n"
 				"                    info (static - useful for debugging)\n"
 				"    --no-direct-mem Don't access MH:W memory directly and dynamically, use a local copy\n"
-				"                    via buffers - increase CPU usage (both u and s) and the expenses\n"
+				"                    via buffers - increase CPU usage (both u and s) at the advantage\n"
 				"                    of potentially slightly less inconsistencies\n"
 				"-f, --f-display f   Writes the content of display on a file 'f', refreshing such file\n"
 				"                    every same iteration. The content of the file is a 'wchar_t' similar\n"

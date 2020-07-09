@@ -37,7 +37,7 @@ Executes linux-hunter 0.1.0
 -l, --load dir      Loads the specified capture directory 'dir' and displays
                     info (static - useful for debugging)
     --no-direct-mem Don't access MH:W memory directly and dynamically, use a local copy
-                    via buffers - increase CPU usage (both u and s) and the expenses
+                    via buffers - increase CPU usage (both u and s) at the advantage
                     of potentially slightly less inconsistencies
 -f, --f-display f   Writes the content of display on a file 'f', refreshing such file
                     every same iteration. The content of the file is a 'wchar_t' similar
@@ -85,7 +85,7 @@ VKDTO_HUD=1 VKDTO_FILE=/dev/shm/linux-hunter %command%
 ```
 and then, once the game is up and running, execute _linux-hunter_ from the terminal with following options
 ```
-sudo ./linux-hunter -m --lazy-alloc -d -f /dev/shm/linux-hunter
+sudo ./linux-hunter -m -f /dev/shm/linux-hunter
 ```
 This way _vkdto_ will dynamically display the overlay with the content from _linux-hunter_ and you will see it without needing to keep the _terminal_ window in foreground (see below a screenshot with both overlay in action in foreground and background _linux-hunter_ in the terminal).
 Please note that the _status_ file should be created on a _memory_ device (reccomended `/dev/shm` or `/tmp`) - otherwise this may overutilize the physical filesystem.
