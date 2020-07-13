@@ -54,7 +54,7 @@ namespace {
 }
 
 namespace {
-	const char*	VERSION = "0.0.8.1";
+	const char*	VERSION = "0.1.0";
 
 	// settings/options management
 	pid_t		mhw_pid = -1;
@@ -65,8 +65,8 @@ namespace {
 			debug_ptrs = false,
 			debug_all = false,
 			mem_dirty_opt = false,
-			lazy_alloc = false,
-			direct_mem = false;
+			lazy_alloc = true,
+			direct_mem = true;
 	size_t		refresh_interval = 1000;
 
 	void print_help(const char *prog, const char *version) {
@@ -75,9 +75,9 @@ namespace {
 				"-s, --save dir      Captures the specified pid into directory 'dir' and quits\n"
 				"-l, --load dir      Loads the specified capture directory 'dir' and displays\n"
 				"                    info (static - useful for debugging)\n"
-				"-d, --direct-mem    Access MH:W memory directly and dynamically, without using local\n"
-				"                    buffers - massively reduce CPU usage (both u and s) and the expenses\n"
-				"                    of potentially slightly more inconsistencies\n"
+				"    --no-direct-mem Don't access MH:W memory directly and dynamically, use a local copy\n"
+				"                    via buffers - increase CPU usage (both u and s) at the advantage\n"
+				"                    of potentially slightly less inconsistencies\n"
 				"-f, --f-display f   Writes the content of display on a file 'f', refreshing such file\n"
 				"                    every same iteration. The content of the file is a 'wchar_t' similar\n"
 				"                    to the UI, having special '#' as escape character to denote styles\n"
@@ -92,9 +92,9 @@ namespace {
 				"                    (useful for analysing AoB) and quits; implies setting debug-ptrs\n"
 				"    --mem-dirty-opt Enable optimization to load memory pages just once per refresh;\n"
 				"                    this should be slightly less accurate but uses less system time\n"
-				"    --lazy-alloc    Enable optimization to reduce memory usage and allocate memory only\n"
-				"                    when absolutely necessary - decreases memory usage but slightly\n"
-				"                    increase calls to alloc/free functions\n"
+				"    --no-lazy-alloc Disable optimization to reduce memory usage and always allocates memory\n"
+				"                    to copy MH:W process - minimize dynamic allocations at the expense of\n"
+				"                    memory usage; decrease calls to alloc/free functions\n"
 				"-r, --refresh i     Specifies what is the UI/stats refresh interval in ms (default 1000)\n"
 				"    --help          prints this help and exit\n\n"
 				"When linux-hunter is running:\n\n"
@@ -111,12 +111,12 @@ namespace {
 			{"show-monsters",	no_argument,	   0,	'm'},
 			{"save",		required_argument, 0,	's'},
 			{"load",		required_argument, 0,	'l'},
-			{"direct-mem",		no_argument,	   0,	'd'},
+			{"no-direct-mem",	no_argument,	   0,	0},
 			{"f-display",		required_argument, 0,	'f'},
 			{"debug-ptrs",		no_argument,	   0,	0},
 			{"debug-all",		no_argument,	   0,	0},
 			{"mem-dirty-opt",	no_argument,	   0,	0},
-			{"lazy-alloc",		no_argument,	   0,	0},
+			{"no-lazy-alloc",	no_argument,	   0,	0},
 			{"refresh",		required_argument, 0,   'r'},
 			{0, 0, 0, 0}
 		};
@@ -125,7 +125,7 @@ namespace {
 			// getopt_long stores the option index here
 			int		option_index = 0;
 
-			if(-1 == (c = getopt_long(argc, argv, "ds:l:r:mf:", long_options, &option_index)))
+			if(-1 == (c = getopt_long(argc, argv, "s:l:r:mf:", long_options, &option_index)))
 				break;
 
 			switch (c) {
@@ -144,13 +144,11 @@ namespace {
 					mem_dirty_opt = true;
 				} else if (!std::strcmp("mhw-pid", long_options[option_index].name)) {
 					mhw_pid = std::atoi(optarg);
-				} else if (!std::strcmp("lazy-alloc", long_options[option_index].name)) {
-					lazy_alloc = true;
+				} else if (!std::strcmp("no-lazy-alloc", long_options[option_index].name)) {
+					lazy_alloc = false;
+				} else if (!std::strcmp("no-direct-mem", long_options[option_index].name)) {
+					direct_mem = false;
 				}
-			} break;
-
-			case 'd': {
-				direct_mem = true;
 			} break;
 
 			case 'r': {

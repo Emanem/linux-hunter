@@ -151,7 +151,11 @@ namespace mhw_lookup {
                 { L"em127_00", 23,
 		"Leshen" },
                 { L"em127_01", 51,
-		"Ancient Leshen" }
+		"Ancient Leshen" },
+		{ L"em050_00", 87,
+		"Alatreon" },
+		{ L"em042_05", 100,
+		"Frostfang Barioth" }
 	};
 }
 

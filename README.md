@@ -22,22 +22,23 @@ Prototype MH:W companion app for Linux, inspired by SmartHunter.
 
 ## Supported Version
 
-* 13.50.01 - Fully Supported
+* 14.00.00 - Fully Supported
+* ~~13.50.01 - Fully Supported~~
 * ~~13.50.00 - Fully supported~~
 
 ## Usage
 Running the application as `./linux-hunter --help` will produce the following:
 ```
 Usage: ./linux-hunter [options]
-Executes linux-hunter 0.0.8
+Executes linux-hunter 0.1.0
 
 -m, --show-monsters Shows HP monsters data (requires slightly more CPU usage)
 -s, --save dir      Captures the specified pid into directory 'dir' and quits
 -l, --load dir      Loads the specified capture directory 'dir' and displays
                     info (static - useful for debugging)
--d, --direct-mem    Access MH:W memory directly and dynamically, without using local
-                    buffers - massively reduce CPU usage (both u and s) and the expenses
-                    of potentially slightly more inconsistencies
+    --no-direct-mem Don't access MH:W memory directly and dynamically, use a local copy
+                    via buffers - increase CPU usage (both u and s) at the advantage
+                    of potentially slightly less inconsistencies
 -f, --f-display f   Writes the content of display on a file 'f', refreshing such file
                     every same iteration. The content of the file is a 'wchar_t' similar
                     to the UI, having special '#' as escape character to denote styles
@@ -52,9 +53,9 @@ Executes linux-hunter 0.0.8
                     (useful for analysing AoB) and quits; implies setting debug-ptrs
     --mem-dirty-opt Enable optimization to load memory pages just once per refresh;
                     this should be slightly less accurate but uses less system time
-    --lazy-alloc    Enable optimization to reduce memory usage and allocate memory only
-                    when absolutely necessary - decreases memory usage but slightly
-                    increase calls to alloc/free functions
+    --no-lazy-alloc Disable optimization to reduce memory usage and always allocates memory
+                    to copy MH:W process - minimize dynamic allocations at the expense of
+                    memory usage; decrease calls to alloc/free functions
 -r, --refresh i     Specifies what is the UI/stats refresh interval in ms (default 1000)
     --help          prints this help and exit
 
@@ -84,7 +85,7 @@ VKDTO_HUD=1 VKDTO_FILE=/dev/shm/linux-hunter %command%
 ```
 and then, once the game is up and running, execute _linux-hunter_ from the terminal with following options
 ```
-sudo ./linux-hunter -m --lazy-alloc -d -f /dev/shm/linux-hunter
+sudo ./linux-hunter -m -f /dev/shm/linux-hunter
 ```
 This way _vkdto_ will dynamically display the overlay with the content from _linux-hunter_ and you will see it without needing to keep the _terminal_ window in foreground (see below a screenshot with both overlay in action in foreground and background _linux-hunter_ in the terminal).
 Please note that the _status_ file should be created on a _memory_ device (reccomended `/dev/shm` or `/tmp`) - otherwise this may overutilize the physical filesystem.
@@ -106,10 +107,7 @@ Current code/logic is somehow prototype and partially optimized - please use it 
 ## How it works
 _linux-hunter_ primarily operates by loading the _entire_ MH:W memory address space into its own; it then scans memory to find some _magic_ patterns. When such patterns are found, it then goes into a loop and keeps on _navigating_ those patterns by de-referencing memory addresses and interpreting those according to the MH:W memory layout (i.e. player, monsters and session information).
 
-_linux-hunter_ will perform such memory navigation every _n_ time and then display on the terminal UI required information. Using different options sorts different effects:
-* `--lazy-allocs` Only copy full memory segments from HM:W process when necessary - this minimizes memory usage
-* `--mem-dirty-opt` Only refresh full memory segments from HM:W process when necessary - this minimizes CPU usage by limiting memory transfer (_system_ time)
-* `-d / --direct-mem` Don't load/refresh full memory segments from MH:W process, but only the minimum required bits to de-reference memory. This option alone reduces drastically CPU usage for _user_ and _system_ time - we don't copy anymore memory segments. Combined with `--lazy-allocs` also reduces memory usage even further. The drawback is potential instability 
+_linux-hunter_ will perform such memory navigation every _n_ time and then display on the terminal UI required information.
 
 ## Linux differences
 Following the main differences I had to overcome to port the logic of SmartHunter to Linux; considering the challenges below, I think I've been lucky so far.
@@ -158,15 +156,8 @@ You need to have `libncursesw5-dev` installed to compile (on Ubuntu is `sudo apt
 Once done, `make release` and you'll have your _linux-hunter_ ready to be running.
 
 ## How to run
-The most optimized way to run _linux-hunter_ would be `sudo ./linux-hunter -m --mem-dirty-opt --lazy-alloc`; this way you would start it using both low CPU and memory, plus displaying _monsters_ information. In this case _linux-hunter_ will try to find MH:W _pid_ (if this fails to find the pid, you can use the `--pid <pid>` option).
+The most optimized way to run _linux-hunter_ would be `sudo ./linux-hunter -m`; this way you would start it using both low CPU and memory, plus displaying _monsters_ information. In this case _linux-hunter_ will try to find MH:W _pid_ (if this fails to find the pid, you can use the `--pid <pid>` option).
 Once running press `Esc` or `q` to quit.
-
-From version _0.0.7_ the reccomended experimental way to run _linux-hunter_ should be `sudo ./linux-hunter  -m --lazy-alloc -d`; this will reduce the memory even dramatically (order of 10s of MiB) and the CPU usage to almost 0 (both _user_ and _system_ time).
-The drawback of speciying the `-d` option (or `--direct-mem` in long form) is that it may lead to slightly more instability and slightly outdated information; see [Changelog](#changelog) and [How it works](#how-it-works) for a brief description with regard to this option.
-
-Please note that running with experimental option `--mem-dirty-opt` should reduce the performance impact by limiting scanning memory (on i7-8700k the CPU usage went from 9% to 2%) - but the stats per player may be slightly inaccurate (i.e. may be refreshes late).
-
-Runnin with `--lazy-alloc` will massively reduce memory consumption (approximately by 90%).
 
 There are some options to help out with debugging (such as `--debug-ptrs` and `--debug-all`), if you use those I suppose you have compiled it yourself hence should have knowledge of such options (you should have looked at the code by then).
 
@@ -180,6 +171,8 @@ This work couldn't have been possible w/o previous work of:
 
 ## Changelog
 
+* 0.1.0
+  - Made by default `lazy-alloc` and `direct-mem` as true, this is the most optimized setup
 * 0.0.8
   - Added option (`-f` or `-f-display`) to output the display as a `wchar_t` file so that can be read by other processes independently. This should work along the lines of _/procfs_ filesystem and it's hevaily reccomended to set the value of this option to a _ramfs_ type of directory (i.e. like '/dev/shm/linux-hunter.out' or '/tmp/linux-hunter.out')
 * 0.0.7
