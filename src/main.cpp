@@ -254,7 +254,7 @@ int main(int argc, char *argv[]) {
 		// with content from the disk
 		if(!load_dir.empty()) {
 			if(direct_mem)
-				throw std::runtime_error("The option -d,--direct-mem is incompatile with -l,--load");
+				throw std::runtime_error("The option -l,--load is incompatible with direct memory, please specify also --no-direct-mem");
 			std::cerr << "Loading memory content from directory '" << load_dir << "'..." << std::endl;
 			mb.load(load_dir.c_str());
 			std::cerr << "done" << std::endl;
