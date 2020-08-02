@@ -54,7 +54,7 @@ namespace {
 }
 
 namespace {
-	const char*	VERSION = "0.1.0";
+	const char*	VERSION = "0.1.1";
 
 	// settings/options management
 	pid_t		mhw_pid = -1;
@@ -66,7 +66,8 @@ namespace {
 			debug_all = false,
 			mem_dirty_opt = false,
 			lazy_alloc = true,
-			direct_mem = true;
+			direct_mem = true,
+			no_color = false;
 	size_t		refresh_interval = 1000;
 
 	void print_help(const char *prog, const char *version) {
@@ -96,6 +97,8 @@ namespace {
 				"                    to copy MH:W process - minimize dynamic allocations at the expense of\n"
 				"                    memory usage; decrease calls to alloc/free functions\n"
 				"-r, --refresh i     Specifies what is the UI/stats refresh interval in ms (default 1000)\n"
+				"    --no-color      Do not use colours when rendering text (useful on distro which can't\n"
+				"                    handle ncurses properly and end up not displaying text)\n"
 				"    --help          prints this help and exit\n\n"
 				"When linux-hunter is running:\n\n"
 				"'q' or 'ESC'        Quits the application\n"
@@ -118,6 +121,7 @@ namespace {
 			{"mem-dirty-opt",	no_argument,	   0,	0},
 			{"no-lazy-alloc",	no_argument,	   0,	0},
 			{"refresh",		required_argument, 0,   'r'},
+			{"no-color",		no_argument,       0,	0},
 			{0, 0, 0, 0}
 		};
 
@@ -148,6 +152,8 @@ namespace {
 					lazy_alloc = false;
 				} else if (!std::strcmp("no-direct-mem", long_options[option_index].name)) {
 					direct_mem = false;
+				} else if (!std::strcmp("no-color", long_options[option_index].name)) {
+					no_color = true;
 				}
 			} break;
 
@@ -314,8 +320,8 @@ int main(int argc, char *argv[]) {
 			timer::thread_tmr	tt(&ad.tm);
 			mb.update();
 			mhw_lookup::get_data(mhwpd, mb, mhwd);
-			ui::draw(w_dpy.get(), draw_flags, ad, mhwd);
-			if(f_dpy) ui::draw(f_dpy.get(), draw_flags, ad, mhwd);
+			ui::draw(w_dpy.get(), draw_flags, ad, mhwd, no_color);
+			if(f_dpy) ui::draw(f_dpy.get(), draw_flags, ad, mhwd, no_color);
 			size_t			cur_refresh_tm = 0;
 			do {
 				const auto 	tm_get = tt.get_wall();

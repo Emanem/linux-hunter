@@ -37,7 +37,7 @@ namespace ui {
 		SHOW_MONSTER_DATA = 1
 	};
 
-	extern void draw(vbrush::iface* b, const size_t flags, const app_data& ad, const mhw_data& d);
+	extern void draw(vbrush::iface* b, const size_t flags, const app_data& ad, const mhw_data& d, const bool no_color);
 }
 
 #endif // _UI_H_
