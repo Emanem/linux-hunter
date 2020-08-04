@@ -175,6 +175,8 @@ This work couldn't have been possible w/o previous work of:
 
 ## Changelog
 
+* 0.1.1
+  - Added option to remove colors when drawing data
 * 0.1.0
   - Made by default `lazy-alloc` and `direct-mem` as true, this is the most optimized setup
 * 0.0.8
