@@ -31,7 +31,7 @@ Prototype MH:W companion app for Linux, inspired by SmartHunter.
 Running the application as `./linux-hunter --help` will produce the following:
 ```
 Usage: ./linux-hunter [options]
-Executes linux-hunter 0.1.0
+Executes linux-hunter 0.1.1
 
 -m, --show-monsters Shows HP monsters data (requires slightly more CPU usage)
 -s, --save dir      Captures the specified pid into directory 'dir' and quits
@@ -58,6 +58,9 @@ Executes linux-hunter 0.1.0
                     to copy MH:W process - minimize dynamic allocations at the expense of
                     memory usage; decrease calls to alloc/free functions
 -r, --refresh i     Specifies what is the UI/stats refresh interval in ms (default 1000)
+    --no-color      Do not use colours when rendering text (useful on distro which can't
+                    handle ncurses properly and end up not displaying text)
+ 
     --help          prints this help and exit
 
 When linux-hunter is running:
@@ -172,6 +175,8 @@ This work couldn't have been possible w/o previous work of:
 
 ## Changelog
 
+* 0.1.1
+  - Added option to remove colors when drawing data
 * 0.1.0
   - Made by default `lazy-alloc` and `direct-mem` as true, this is the most optimized setup
 * 0.0.8

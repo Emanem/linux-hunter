@@ -1,6 +1,6 @@
 #include "ui.h"
 
-extern void ui::draw(vbrush::iface* b, const size_t flags, const app_data& ad, const mhw_data& d) {
+extern void ui::draw(vbrush::iface* b, const size_t flags, const app_data& ad, const mhw_data& d, const bool no_color) {
 	char		buf[256]; // local buffer for strings
 	if(!b->init())
 		return;
@@ -58,9 +58,14 @@ extern void ui::draw(vbrush::iface* b, const size_t flags, const app_data& ad, c
 			continue;
 		}
 		const auto	name_attr = (d.players[i].left_session) ? vbrush::iface::attr::DIM : v_colors[i];
-		b->set_attr_on(name_attr);
+		// set attribute when no_color is false
+		// OR the player has left the session
+		if(!no_color || d.players[i].left_session)
+			b->set_attr_on(name_attr);
 		b->draw_text((d.players[i].left_session) ? L"Left the session" : d.players[i].name.c_str(), 32);
-		if(!d.players[i].left_session)
+		// only remove the attribute here
+		// when no_color has not been set
+		if(!no_color && !d.players[i].left_session)
 			b->set_attr_off(name_attr);
 		std::snprintf(buf, 256, "%-4d", (int)i);
 		b->draw_text(buf);
