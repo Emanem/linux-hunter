@@ -155,7 +155,9 @@ namespace mhw_lookup {
 		{ L"em050_00", 87,
 		"Alatreon" },
 		{ L"em042_05", 100,
-		"Frostfang Barioth" }
+		"Frostfang Barioth" },
+		{ L"em013_00", 101,
+		"Fatalis" }
 	};
 }
 
