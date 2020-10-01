@@ -22,7 +22,7 @@ Prototype MH:W companion app for Linux, inspired by SmartHunter.
 
 ## Supported Version
 
-* 15.01.00 - Currently the session and player damage data is broken, only the monster data does work
+* 15.01.00 - Fully Supported
 * ~~14.02.00 - Fully Supported~~
 * ~~14.01.00 - Fully Supported~~
 * ~~14.00.00 - Fully Supported~~
@@ -33,7 +33,7 @@ Prototype MH:W companion app for Linux, inspired by SmartHunter.
 Running the application as `./linux-hunter --help` will produce the following:
 ```
 Usage: ./linux-hunter [options]
-Executes linux-hunter 0.1.1
+Executes linux-hunter 0.1.2
 
 -m, --show-monsters Shows HP monsters data (requires slightly more CPU usage)
 -s, --save dir      Captures the specified pid into directory 'dir' and quits
