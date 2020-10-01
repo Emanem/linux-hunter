@@ -26,7 +26,7 @@ namespace offsets {
 	namespace PlayerNameCollection {
 		const static uint32_t	IDLength = 12,
 		      			PlayerNameLength = 32,
-					FirstPlayerName = 0x532ED,
+					FirstPlayerName = 0x53305,
 					SessionID = FirstPlayerName + 0xF43,
 					SessionHostPlayerName = SessionID + 0x3F,
 					LobbyID = FirstPlayerName + 0x463,
