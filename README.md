@@ -22,7 +22,8 @@ Prototype MH:W companion app for Linux, inspired by SmartHunter.
 
 ## Supported Version
 
-* 14.02.00 - Fully Supported
+* 15.01.00 - Currently the session and player damage data is broken, only the monster data does work
+* ~~14.02.00 - Fully Supported~~
 * ~~14.01.00 - Fully Supported~~
 * ~~14.00.00 - Fully Supported~~
 * ~~13.50.01 - Fully Supported~~
