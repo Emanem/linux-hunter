@@ -177,6 +177,8 @@ This work couldn't have been possible w/o previous work of:
 
 ## Changelog
 
+* 0.1.2
+  - Changes to support release 15.01.00 (Fatalis update)
 * 0.1.1
   - Added option to remove colors when drawing data
 * 0.1.0
