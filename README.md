@@ -3,7 +3,7 @@ Prototype MH:W companion app for Linux, inspired by SmartHunter.
 
 ## Table of Contents
 
-* [Supported Version](#supported-version)
+* [Supported Versions](#supported-versions)
 * [Usage](#usage)
 * [UI](#ui)
 * [Vulkan Overlay](#vulkan-overlay)
@@ -20,9 +20,10 @@ Prototype MH:W companion app for Linux, inspired by SmartHunter.
 * [Credits](#credits)
 * [Changelog](#changelog)
 
-## Supported Version
+## Supported Versions
 
-* 15.01.00 - Currently the session and player damage data is broken, only the monster data does work
+* 15.02.00 - Fully Supported
+* 15.01.00 - Fully Supported (this is deprecated by CAPCOM)
 * ~~14.02.00 - Fully Supported~~
 * ~~14.01.00 - Fully Supported~~
 * ~~14.00.00 - Fully Supported~~
@@ -33,7 +34,7 @@ Prototype MH:W companion app for Linux, inspired by SmartHunter.
 Running the application as `./linux-hunter --help` will produce the following:
 ```
 Usage: ./linux-hunter [options]
-Executes linux-hunter 0.1.1
+Executes linux-hunter 0.1.2
 
 -m, --show-monsters Shows HP monsters data (requires slightly more CPU usage)
 -s, --save dir      Captures the specified pid into directory 'dir' and quits
@@ -177,6 +178,8 @@ This work couldn't have been possible w/o previous work of:
 
 ## Changelog
 
+* 0.1.2
+  - Changes to support release 15.01.00 (Fatalis update)
 * 0.1.1
   - Added option to remove colors when drawing data
 * 0.1.0
