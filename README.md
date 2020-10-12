@@ -3,7 +3,7 @@ Prototype MH:W companion app for Linux, inspired by SmartHunter.
 
 ## Table of Contents
 
-* [Supported Version](#supported-version)
+* [Supported Versions](#supported-versions)
 * [Usage](#usage)
 * [UI](#ui)
 * [Vulkan Overlay](#vulkan-overlay)
@@ -20,9 +20,10 @@ Prototype MH:W companion app for Linux, inspired by SmartHunter.
 * [Credits](#credits)
 * [Changelog](#changelog)
 
-## Supported Version
+## Supported Versions
 
-* 15.01.00 - Fully Supported
+* 15.02.00 - Fully Supported
+* 15.01.00 - Fully Supported (this is deprecated by CAPCOM)
 * ~~14.02.00 - Fully Supported~~
 * ~~14.01.00 - Fully Supported~~
 * ~~14.00.00 - Fully Supported~~
