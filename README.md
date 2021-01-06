@@ -22,7 +22,8 @@ Prototype MH:W companion app for Linux, inspired by SmartHunter.
 
 ## Supported Versions
 
-* 15.10.00 - Fully Supported
+* 15.11.00 - Fully Supported
+* 15.10.00 - Fully Supported (this is deprecated by CAPCOM)
 * 15.02.00 - Fully Supported (this is deprecated by CAPCOM)
 * 15.01.00 - Fully Supported (this is deprecated by CAPCOM)
 * ~~14.02.00 - Fully Supported~~
