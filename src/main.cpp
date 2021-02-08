@@ -61,7 +61,7 @@ namespace {
 	std::string	save_dir,
 			load_dir,
 			file_display;
-	bool	show_monsters_data = false,
+	bool	        show_monsters_data = false,
 			show_crowns_data = false,
 			debug_ptrs = false,
 			debug_all = false,
@@ -74,7 +74,7 @@ namespace {
 	void print_help(const char *prog, const char *version) {
 		std::cerr <<	"Usage: " << prog << " [options]\nExecutes linux-hunter " << version << "\n\n"
 				"-m, --show-monsters Shows HP monsters data (requires slightly more CPU usage)\n"
-				"-c, --show-crowns	 Shows information about crowns (Gold Small, Silver Large and Gold Large)\n"
+				"-c, --show-crowns   Shows information about crowns (Gold Small, Silver Large and Gold Large)\n"
 				"-s, --save dir      Captures the specified pid into directory 'dir' and quits\n"
 				"-l, --load dir      Loads the specified capture directory 'dir' and displays\n"
 				"                    info (static - useful for debugging)\n"
@@ -314,9 +314,8 @@ int main(int argc, char *argv[]) {
 		size_t				draw_flags = 0;
 		if(show_monsters_data)
 			draw_flags |= ui::draw_flags::SHOW_MONSTER_DATA;
-			
-			if (show_crowns_data)
-				draw_flags |= ui::draw_flags::SHOW_CROWN_DATA;
+		if (show_crowns_data)
+			draw_flags |= ui::draw_flags::SHOW_CROWN_DATA;
 		mhw_lookup::pattern_data	mhwpd{ &p6, &p2, (show_monsters_data) ? &p3 : 0, &p7 };
 		keyb_proc			kp(run);
 		// if we don't perform clear, the lazy_alloc

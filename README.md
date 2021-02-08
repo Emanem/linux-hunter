@@ -36,10 +36,10 @@ Prototype MH:W companion app for Linux, inspired by SmartHunter.
 Running the application as `./linux-hunter --help` will produce the following:
 ```
 Usage: ./linux-hunter [options]
-Executes linux-hunter 0.1.2
+Executes linux-hunter 0.1.3
 
 -m, --show-monsters Shows HP monsters data (requires slightly more CPU usage)
--c, --show-crowns	 Shows information about crowns (Gold Small, Silver Large and Gold Large)
+-c, --show-crowns   Shows information about crowns (Gold Small, Silver Large and Gold Large)
 -s, --save dir      Captures the specified pid into directory 'dir' and quits
 -l, --load dir      Loads the specified capture directory 'dir' and displays
                     info (static - useful for debugging)

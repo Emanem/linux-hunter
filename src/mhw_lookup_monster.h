@@ -19,7 +19,7 @@ namespace mhw_lookup {
 		float		gold;
 	};
 
-	crown_preset_data CROWN_PRESETS[] = {
+	const crown_preset_data CROWN_PRESETS[4] = {
 		{Standard , 0.90f, 1.15f, 1.23f},
 		{Alternate, 0.90f, 1.10f, 1.20f},
 		{Savage   , 0.99f, 1.14f, 1.20f},

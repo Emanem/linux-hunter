@@ -21,7 +21,7 @@ namespace {
 	// this is to ensure that monster data is properly sorted
 	const bool	sorted_MONSTERS = sort_MONSTERS();
 
-	const mhw_lookup::crown_preset_data* get_crown_preset(const uint8_t	crown_preset_id) {
+	const mhw_lookup::crown_preset_data* get_crown_preset(const uint8_t crown_preset_id) {
 		// use binary search via lower_bound
 		const auto	*first = &mhw_lookup::CROWN_PRESETS[0],
 				*last = &mhw_lookup::CROWN_PRESETS[sizeof(mhw_lookup::CROWN_PRESETS)/sizeof(mhw_lookup::crown_preset_data)];
@@ -126,36 +126,27 @@ namespace {
 		if(!std::regex_match(realid, IncludeMonsterIdRegex))
 			return false;
 		m.used = true;
-
 		m.hp_total = mb.read_mem<float>(hcompaddr + offsets::MonsterHealthComponent::MaxHealth, true);
 		m.hp_current = mb.read_mem<float>(hcompaddr + offsets::MonsterHealthComponent::CurrentHealth, true);
-		float size_scale = mb.read_mem<float>(maddr + offsets::Monster::MonsterSizeScale, true);
-		float scale_modifier = mb.read_mem<float>(maddr + offsets::Monster::MonsterScaleModifier, true);
-		if (scale_modifier <= 0 || scale_modifier >= 2 ){
-                scale_modifier = 1;
-        }
-
+		const auto size_scale = mb.read_mem<float>(maddr + offsets::Monster::MonsterSizeScale, true);
+		auto scale_modifier = mb.read_mem<float>(maddr + offsets::Monster::MonsterScaleModifier, true);
+		if(scale_modifier <= 0 || scale_modifier >= 2 ) scale_modifier = 1;
 		// if with SmartHunter we should do the lookup based on the
 		// string id, with info gotten from HunterPie, it's better
 		// to use the numerical id
 		const mhw_lookup::monster_data* m_stored_data = get_monster_stored_data(numid);
-		if (m_stored_data) {
+		if(m_stored_data) {
 			m.name = m_stored_data->name;
-
-			float modified_size_scale = round(size_scale/scale_modifier*100)/100;
+			const auto modified_size_scale = round(size_scale/scale_modifier*100)/100;
 			m.body_size = m_stored_data->base_size * modified_size_scale;
-
 			const mhw_lookup::crown_preset_data* m_crown_preset = get_crown_preset(m_stored_data->crown_preset);
 			if (m_crown_preset) {
-				if (modified_size_scale <= m_crown_preset->mini) {
+				if (modified_size_scale <= m_crown_preset->mini)
 					m.crown = "Mini";
-				}				
-				else if (modified_size_scale >= m_crown_preset->gold) {
+				else if (modified_size_scale >= m_crown_preset->gold)
 					m.crown = "Gold";				
-				}
-				else if (modified_size_scale >= m_crown_preset->silver) {
+				else if (modified_size_scale >= m_crown_preset->silver)
 					m.crown = "Silver";
-				}
 			}
 		}	
 		

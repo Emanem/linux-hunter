@@ -49,7 +49,6 @@ namespace offsets {
 					MonsterNumIDOffset = 0x12280,
 					MonsterSizeScale = 0x188,
 					MonsterScaleModifier = 0x7730;
-					
 	}
 
 	namespace MonsterModel {
