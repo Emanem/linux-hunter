@@ -22,9 +22,11 @@ namespace ui {
 
 		struct monster_info {
 			bool		used = false;
-			const char*	name = 0;
+			const char*	name = "<N/A>";
 			float		hp_total = -1.0,
-					hp_current = -1.0;
+					hp_current = -1.0,
+					body_size = 0;
+			const char*	crown = "";
 		};
 
 		std::wstring	session_id,
@@ -34,7 +36,8 @@ namespace ui {
 	};
 
 	enum draw_flags {
-		SHOW_MONSTER_DATA = 1
+		SHOW_MONSTER_DATA = 1,
+		SHOW_CROWN_DATA = 2,
 	};
 
 	extern void draw(vbrush::iface* b, const size_t flags, const app_data& ad, const mhw_data& d, const bool no_color);

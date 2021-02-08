@@ -87,7 +87,13 @@ extern void ui::draw(vbrush::iface* b, const size_t flags, const app_data& ad, c
 	if(flags & draw_flags::SHOW_MONSTER_DATA) {
 		b->next_row(2);
 		// then Monsters - first header
-		std::snprintf(buf, 256, "%-32s%-14s%-8s", "Monster Name", "HP", "%");
+		if(flags & draw_flags::SHOW_CROWN_DATA) {
+			std::snprintf(buf, 256, "%-32s%-14s%-8s %-6s", "Monster Name", "HP", "%","Crown");
+		}
+		else {
+			std::snprintf(buf, 256, "%-32s%-14s%-8s", "Monster Name", "HP", "%");
+		}
+
 		b->set_attr_on(vbrush::iface::attr::REVERSE);
 		b->draw_text(buf);
 		b->set_attr_off(vbrush::iface::attr::REVERSE);
@@ -102,7 +108,13 @@ extern void ui::draw(vbrush::iface* b, const size_t flags, const app_data& ad, c
 			}
 			b->next_row();
 			if(mi.hp_current <= 0.001) b->set_attr_on(vbrush::iface::attr::DIM);
-			std::snprintf(buf, 256, "%-32s %6d/%6d%8.2f", mi.name, (int)mi.hp_current, (int)mi.hp_total, 100.0*mi.hp_current/mi.hp_total);
+
+			if(flags & draw_flags::SHOW_CROWN_DATA) {
+				std::snprintf(buf, 256, "%-32s %6d/%6d%8.2f %-6s", mi.name, (int)mi.hp_current, (int)mi.hp_total, 100.0*mi.hp_current/mi.hp_total, mi.crown);
+			}
+			else {
+				std::snprintf(buf, 256, "%-32s %6d/%6d%8.2f", mi.name, (int)mi.hp_current, (int)mi.hp_total, 100.0*mi.hp_current/mi.hp_total);
+			} 
 			b->draw_text(buf);
 			if(mi.hp_current <= 0.001) b->set_attr_off(vbrush::iface::attr::DIM);
 			++cur_monster;
