@@ -181,6 +181,8 @@ This work couldn't have been possible w/o previous work of:
 
 ## Changelog
 
+* 0.1.3
+  - Added support for _Crown_ when avaiable (by [pr3martins](https://github.com/pr3martins))
 * 0.1.2
   - Changes to support release 15.01.00 (Fatalis update)
 * 0.1.1
