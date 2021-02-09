@@ -46,7 +46,9 @@ namespace offsets {
 					NextMonsterOffset = 0x18,
 					MonsterStartOfStructOffset = 0x40,
 					MonsterHealthComponentOffset = 0x7670,
-					MonsterNumIDOffset = 0x12280;
+					MonsterNumIDOffset = 0x12280,
+					MonsterSizeScale = 0x188,
+					MonsterScaleModifier = 0x7730;
 	}
 
 	namespace MonsterModel {

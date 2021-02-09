@@ -4,6 +4,7 @@
 #include <regex>
 #include <algorithm>
 #include <cwchar>
+#include <cmath> 
 
 namespace {
 	bool sort_MONSTERS(void) {
@@ -20,7 +21,22 @@ namespace {
 	// this is to ensure that monster data is properly sorted
 	const bool	sorted_MONSTERS = sort_MONSTERS();
 
-	const char* get_monster_name(const uint32_t id) {
+	const mhw_lookup::crown_preset_data* get_crown_preset(const uint8_t crown_preset_id) {
+		// use binary search via lower_bound
+		const auto	*first = &mhw_lookup::CROWN_PRESETS[0],
+				*last = &mhw_lookup::CROWN_PRESETS[sizeof(mhw_lookup::CROWN_PRESETS)/sizeof(mhw_lookup::crown_preset_data)];
+		const auto	it = std::lower_bound(first, last, crown_preset_id,
+				[](const mhw_lookup::crown_preset_data& lhs, const uint32_t rhs) -> bool {
+					return lhs.crown_preset_id < rhs;
+				});
+
+		if(it != last && it->crown_preset_id == crown_preset_id)
+			return it;
+
+		return NULL;
+	}
+
+	const mhw_lookup::monster_data* get_monster_stored_data(const uint32_t id) {
 		// use binary search via lower_bound
 		const auto	*first = &mhw_lookup::MONSTERS[0],
 				*last = &mhw_lookup::MONSTERS[sizeof(mhw_lookup::MONSTERS)/sizeof(mhw_lookup::monster_data)];
@@ -30,9 +46,9 @@ namespace {
 				});
 
 		if(it != last && it->num_id == id)
-			return it->name;
+			return it;
 
-		return "<N/A>";
+		return NULL;
 	}
 	
 	// get session info 
@@ -110,12 +126,30 @@ namespace {
 		if(!std::regex_match(realid, IncludeMonsterIdRegex))
 			return false;
 		m.used = true;
+		m.hp_total = mb.read_mem<float>(hcompaddr + offsets::MonsterHealthComponent::MaxHealth, true);
+		m.hp_current = mb.read_mem<float>(hcompaddr + offsets::MonsterHealthComponent::CurrentHealth, true);
+		const auto size_scale = mb.read_mem<float>(maddr + offsets::Monster::MonsterSizeScale, true);
+		auto scale_modifier = mb.read_mem<float>(maddr + offsets::Monster::MonsterScaleModifier, true);
+		if(scale_modifier <= 0 || scale_modifier >= 2 ) scale_modifier = 1;
 		// if with SmartHunter we should do the lookup based on the
 		// string id, with info gotten from HunterPie, it's better
 		// to use the numerical id
-		m.name = get_monster_name(numid);
-		m.hp_total = mb.read_mem<float>(hcompaddr + offsets::MonsterHealthComponent::MaxHealth, true);
-		m.hp_current = mb.read_mem<float>(hcompaddr + offsets::MonsterHealthComponent::CurrentHealth, true);
+		const mhw_lookup::monster_data* m_stored_data = get_monster_stored_data(numid);
+		if(m_stored_data) {
+			m.name = m_stored_data->name;
+			const auto modified_size_scale = round(size_scale/scale_modifier*100)/100;
+			m.body_size = m_stored_data->base_size * modified_size_scale;
+			const mhw_lookup::crown_preset_data* m_crown_preset = get_crown_preset(m_stored_data->crown_preset);
+			if (m_crown_preset) {
+				if (modified_size_scale <= m_crown_preset->mini)
+					m.crown = "Mini";
+				else if (modified_size_scale >= m_crown_preset->gold)
+					m.crown = "Gold";				
+				else if (modified_size_scale >= m_crown_preset->silver)
+					m.crown = "Silver";
+			}
+		}	
+		
 		return true;
 	}
 

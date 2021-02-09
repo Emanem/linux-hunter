@@ -61,7 +61,8 @@ namespace {
 	std::string	save_dir,
 			load_dir,
 			file_display;
-	bool		show_monsters_data = false,
+	bool	        show_monsters_data = false,
+			show_crowns_data = false,
 			debug_ptrs = false,
 			debug_all = false,
 			mem_dirty_opt = false,
@@ -73,6 +74,7 @@ namespace {
 	void print_help(const char *prog, const char *version) {
 		std::cerr <<	"Usage: " << prog << " [options]\nExecutes linux-hunter " << version << "\n\n"
 				"-m, --show-monsters Shows HP monsters data (requires slightly more CPU usage)\n"
+				"-c, --show-crowns   Shows information about crowns (Gold Small, Silver Large and Gold Large)\n"
 				"-s, --save dir      Captures the specified pid into directory 'dir' and quits\n"
 				"-l, --load dir      Loads the specified capture directory 'dir' and displays\n"
 				"                    info (static - useful for debugging)\n"
@@ -112,6 +114,7 @@ namespace {
 			{"help",		no_argument,	   0,	0},
 			{"mhw-pid",		required_argument, 0,   0},
 			{"show-monsters",	no_argument,	   0,	'm'},
+			{"show-crowns",	    no_argument,	   0,	'c'},
 			{"save",		required_argument, 0,	's'},
 			{"load",		required_argument, 0,	'l'},
 			{"no-direct-mem",	no_argument,	   0,	0},
@@ -129,7 +132,7 @@ namespace {
 			// getopt_long stores the option index here
 			int		option_index = 0;
 
-			if(-1 == (c = getopt_long(argc, argv, "s:l:r:mf:", long_options, &option_index)))
+			if(-1 == (c = getopt_long(argc, argv, "s:l:r:mcf:", long_options, &option_index)))
 				break;
 
 			switch (c) {
@@ -180,6 +183,10 @@ namespace {
 
 			case 'm': {
 				show_monsters_data = true;
+			} break;
+
+			case 'c': {
+				show_crowns_data = true;
 			} break;
 
 			case '?':
@@ -307,6 +314,8 @@ int main(int argc, char *argv[]) {
 		size_t				draw_flags = 0;
 		if(show_monsters_data)
 			draw_flags |= ui::draw_flags::SHOW_MONSTER_DATA;
+		if (show_crowns_data)
+			draw_flags |= ui::draw_flags::SHOW_CROWN_DATA;
 		mhw_lookup::pattern_data	mhwpd{ &p6, &p2, (show_monsters_data) ? &p3 : 0, &p7 };
 		keyb_proc			kp(run);
 		// if we don't perform clear, the lazy_alloc
