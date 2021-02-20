@@ -439,7 +439,7 @@ bool memory::browser::safe_load_effective_addr_rel(const size_t addr, size_t& ou
 	uint64_t operand64 = operand;
 
 	// 64 bit relative addressing 
-	if (operand64 > std::numeric_limits<int32_t>::max()) {
+	if (operand64 > (uint64_t)std::numeric_limits<int32_t>::max()) {
 		operand64 = 0xffffffff00000000 | operand64;
 	}
 	out = addr + operand64 + instructionLength;

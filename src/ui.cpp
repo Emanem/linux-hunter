@@ -17,8 +17,12 @@ extern void ui::draw(vbrush::iface* b, const size_t flags, const app_data& ad, c
 	EEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEIIIIDDDDDDDDDDPPPPPP
 	 */ 
 	// print title
+	// if crown data is enabled, the total h_offset has ot be increased by 8
+	const unsigned	h_add_offset = ((flags & draw_flags::SHOW_CROWN_DATA) ? 8 : 0);
 	{
-		std::snprintf(buf, 256, "linux-hunter %-19s(%4ld/%4ld/%4ld w/u/s)", ad.version, ad.tm.wall, ad.tm.user, ad.tm.system);
+		char	fmtstr[256];
+		std::snprintf(fmtstr, 256, "linux-hunter %%-%is(%%4ld/%%4ld/%%4ld w/u/s)", 19 + h_add_offset);
+		std::snprintf(buf, 256, fmtstr, ad.version, ad.tm.wall, ad.tm.user, ad.tm.system);
 		b->draw_text(buf);
 		b->next_row();
 	}
@@ -37,7 +41,9 @@ extern void ui::draw(vbrush::iface* b, const size_t flags, const app_data& ad, c
 	}
 	// print header
 	{
-		std::snprintf(buf, 256, "%-39s%-4s%-10s%-8s", "Player Name", "Id", "Damage", "%");
+		char	fmtstr[256];
+		std::snprintf(fmtstr, 256, "%%-%is%%-4s%%-10s%%-8s", 32 + h_add_offset);
+		std::snprintf(buf, 256, fmtstr, "Player Name", "Id", "Damage", "%");
 		b->set_attr_on(vbrush::iface::attr::REVERSE);
 		b->draw_text(buf);
 		b->set_attr_off(vbrush::iface::attr::REVERSE);
@@ -51,7 +57,9 @@ extern void ui::draw(vbrush::iface* b, const size_t flags, const app_data& ad, c
 	static const vbrush::iface::attr v_colors[] = { vbrush::iface::attr::C_BLUE, vbrush::iface::attr::C_MAGENTA, vbrush::iface::attr::C_YELLOW, vbrush::iface::attr::C_GREEN };
 	for(size_t i = 0; i < sizeof(d.players)/sizeof(d.players[0]); ++i, b->next_row()) {
 		if(!d.players[i].used) {
-			std::snprintf(buf, 256, "%-39s%-4d                  ", "<N/A>", (int)i);
+			char	fmtstr[256];
+			std::snprintf(fmtstr, 256, "%%-%is%%-4d                  ", 32 + h_add_offset);
+			std::snprintf(buf, 256, fmtstr, "<N/A>", (int)i);
 			b->set_attr_on(vbrush::iface::attr::DIM);
 			b->draw_text(buf);
 			b->set_attr_off(vbrush::iface::attr::DIM);
@@ -62,7 +70,7 @@ extern void ui::draw(vbrush::iface* b, const size_t flags, const app_data& ad, c
 		// OR the player has left the session
 		if(!no_color || d.players[i].left_session)
 			b->set_attr_on(name_attr);
-		b->draw_text((d.players[i].left_session) ? L"Left the session" : d.players[i].name.c_str(), 39);
+		b->draw_text((d.players[i].left_session) ? L"Left the session" : d.players[i].name.c_str(), 32 + h_add_offset);
 		// only remove the attribute here
 		// when no_color has not been set
 		if(!no_color && !d.players[i].left_session)
@@ -78,7 +86,9 @@ extern void ui::draw(vbrush::iface* b, const size_t flags, const app_data& ad, c
 	}
 	// now just the total
 	{
-		std::snprintf(buf, 256, "%-39s%-4s%10d%8s", "Total", "", total_damage, (total_damage > 0) ? "100.00" : "0.0");
+		char	fmtstr[256];
+		std::snprintf(fmtstr, 256, "%%-%is%%-4s%%10d%%8s", 32 + h_add_offset);
+		std::snprintf(buf, 256, fmtstr, "Total", "", total_damage, (total_damage > 0) ? "100.00" : "0.0");
 		b->set_attr_on(vbrush::iface::attr::BOLD);
 		b->draw_text(buf);
 		b->set_attr_off(vbrush::iface::attr::BOLD);
@@ -88,9 +98,9 @@ extern void ui::draw(vbrush::iface* b, const size_t flags, const app_data& ad, c
 		b->next_row(2);
 		// then Monsters - first header
 		if(flags & draw_flags::SHOW_CROWN_DATA)
-			std::snprintf(buf, 256, "%-32s%-14s%-8s %-6s", "Monster Name", "HP", "%","Crown");
+			std::snprintf(buf, 256, "%-32s%-14s%-8s%-8s", "Monster Name", "HP", "%","Crown");
 		else
-			std::snprintf(buf, 256, "%-39s%-14s%-8s", "Monster Name", "HP", "%");
+			std::snprintf(buf, 256, "%-32s%-14s%-8s", "Monster Name", "HP", "%");
 		b->set_attr_on(vbrush::iface::attr::REVERSE);
 		b->draw_text(buf);
 		b->set_attr_off(vbrush::iface::attr::REVERSE);
@@ -106,9 +116,9 @@ extern void ui::draw(vbrush::iface* b, const size_t flags, const app_data& ad, c
 			b->next_row();
 			if(mi.hp_current <= 0.001) b->set_attr_on(vbrush::iface::attr::DIM);
 			if(flags & draw_flags::SHOW_CROWN_DATA)
-				std::snprintf(buf, 256, "%-32s %6d/%6d%8.2f %-6s", mi.name, (int)mi.hp_current, (int)mi.hp_total, 100.0*mi.hp_current/mi.hp_total, mi.crown);
+				std::snprintf(buf, 256, "%-32s %6d/%6d%8.2f%8s", mi.name, (int)mi.hp_current, (int)mi.hp_total, 100.0*mi.hp_current/mi.hp_total, mi.crown);
 			else
-				std::snprintf(buf, 256, "%-39s %6d/%6d%8.2f", mi.name, (int)mi.hp_current, (int)mi.hp_total, 100.0*mi.hp_current/mi.hp_total);
+				std::snprintf(buf, 256, "%-32s %6d/%6d%8.2f", mi.name, (int)mi.hp_current, (int)mi.hp_total, 100.0*mi.hp_current/mi.hp_total);
 			b->draw_text(buf);
 			if(mi.hp_current <= 0.001) b->set_attr_off(vbrush::iface::attr::DIM);
 			++cur_monster;

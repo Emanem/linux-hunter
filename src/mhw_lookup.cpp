@@ -147,6 +147,7 @@ namespace {
 					m.crown = "Gold";				
 				else if (modified_size_scale >= m_crown_preset->silver)
 					m.crown = "Silver";
+				else m.crown = "<none>";
 			}
 		}	
 		
