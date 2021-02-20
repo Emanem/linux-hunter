@@ -20,9 +20,7 @@ extern void ui::draw(vbrush::iface* b, const size_t flags, const app_data& ad, c
 	// if crown data is enabled, the total h_offset has ot be increased by 8
 	const unsigned	h_add_offset = ((flags & draw_flags::SHOW_CROWN_DATA) ? 8 : 0);
 	{
-		char	fmtstr[256];
-		std::snprintf(fmtstr, 256, "linux-hunter %%-%is(%%4ld/%%4ld/%%4ld w/u/s)", 19 + h_add_offset);
-		std::snprintf(buf, 256, fmtstr, ad.version, ad.tm.wall, ad.tm.user, ad.tm.system);
+		std::snprintf(buf, 256, "linux-hunter %-*s(%4ld/%4ld/%4ld w/u/s)", 19 + h_add_offset, ad.version, ad.tm.wall, ad.tm.user, ad.tm.system);
 		b->draw_text(buf);
 		b->next_row();
 	}
@@ -41,9 +39,7 @@ extern void ui::draw(vbrush::iface* b, const size_t flags, const app_data& ad, c
 	}
 	// print header
 	{
-		char	fmtstr[256];
-		std::snprintf(fmtstr, 256, "%%-%is%%-4s%%-10s%%-8s", 32 + h_add_offset);
-		std::snprintf(buf, 256, fmtstr, "Player Name", "Id", "Damage", "%");
+		std::snprintf(buf, 256, "%-*s%-4s%-10s%-8s", 32 + h_add_offset, "Player Name", "Id", "Damage", "%");
 		b->set_attr_on(vbrush::iface::attr::REVERSE);
 		b->draw_text(buf);
 		b->set_attr_off(vbrush::iface::attr::REVERSE);
@@ -57,9 +53,7 @@ extern void ui::draw(vbrush::iface* b, const size_t flags, const app_data& ad, c
 	static const vbrush::iface::attr v_colors[] = { vbrush::iface::attr::C_BLUE, vbrush::iface::attr::C_MAGENTA, vbrush::iface::attr::C_YELLOW, vbrush::iface::attr::C_GREEN };
 	for(size_t i = 0; i < sizeof(d.players)/sizeof(d.players[0]); ++i, b->next_row()) {
 		if(!d.players[i].used) {
-			char	fmtstr[256];
-			std::snprintf(fmtstr, 256, "%%-%is%%-4d                  ", 32 + h_add_offset);
-			std::snprintf(buf, 256, fmtstr, "<N/A>", (int)i);
+			std::snprintf(buf, 256, "%-*s%-4d                  ", 32 + h_add_offset, "<N/A>", (int)i);
 			b->set_attr_on(vbrush::iface::attr::DIM);
 			b->draw_text(buf);
 			b->set_attr_off(vbrush::iface::attr::DIM);
@@ -86,9 +80,7 @@ extern void ui::draw(vbrush::iface* b, const size_t flags, const app_data& ad, c
 	}
 	// now just the total
 	{
-		char	fmtstr[256];
-		std::snprintf(fmtstr, 256, "%%-%is%%-4s%%10d%%8s", 32 + h_add_offset);
-		std::snprintf(buf, 256, fmtstr, "Total", "", total_damage, (total_damage > 0) ? "100.00" : "0.0");
+		std::snprintf(buf, 256, "%-*s%-4s%10d%8s", 32 + h_add_offset, "Total", "", total_damage, (total_damage > 0) ? "100.00" : "0.0");
 		b->set_attr_on(vbrush::iface::attr::BOLD);
 		b->draw_text(buf);
 		b->set_attr_off(vbrush::iface::attr::BOLD);
