@@ -26,6 +26,7 @@
 #include <dirent.h>
 #include <sys/uio.h>
 #include <iconv.h>
+#include <limits>
 
 memory::pattern::pattern() : mem_location(-1) {
 }
