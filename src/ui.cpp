@@ -19,7 +19,7 @@ extern void ui::draw(vbrush::iface* b, const size_t flags, const app_data& ad, c
 	// if crown data is enabled, the total h_offset has ot be increased by 8
 	const unsigned	h_add_offset = ((flags & draw_flags::SHOW_CROWN_DATA) ? 8 : 0);
 	
-    	if (!compact_display) {
+	if (!compact_display) {
 		// print title
 		{
 			std::snprintf(buf, 256, "linux-hunter %-*s(%4ld/%4ld/%4ld w/u/s)", 19 + h_add_offset, ad.version, ad.tm.wall, ad.tm.user, ad.tm.system);
@@ -39,7 +39,7 @@ extern void ui::draw(vbrush::iface* b, const size_t flags, const app_data& ad, c
 			b->draw_text("]");
 			b->next_row(2);
 		}
-    	}
+	}
 	// print header
 	{
 		std::snprintf(buf, 256, "%-*s%-4s%-10s%-8s", 32 + h_add_offset, "Player Name", "Id", "Damage", "%");
@@ -96,7 +96,7 @@ extern void ui::draw(vbrush::iface* b, const size_t flags, const app_data& ad, c
 	// flasg to check monster data
 	if(flags & draw_flags::SHOW_MONSTER_DATA) {
 		b->next_row(compact_display ? 1 : 2);
-// 		// then Monsters - first header
+		// then Monsters - first header
 		if(flags & draw_flags::SHOW_CROWN_DATA)
 			std::snprintf(buf, 256, "%-32s%-14s%-8s%-8s", "Monster Name", "HP", "%","Crown");
 		else

@@ -69,7 +69,7 @@ namespace {
 			lazy_alloc = true,
 			direct_mem = true,
 			no_color = false,
-            		compact_display = false;
+			compact_display = false;
 	size_t		refresh_interval = 1000;
 
 	void print_help(const char *prog, const char *version) {
@@ -102,7 +102,7 @@ namespace {
 				"-r, --refresh i        Specifies what is the UI/stats refresh interval in ms (default 1000)\n"
 				"    --no-color         Do not use colours when rendering text (useful on distro which can't\n"
 				"                       handle ncurses properly and end up not displaying text)\n"
-				"    --compact-display  Makes the output take less vertical space by removing unnecessary\n"
+				"    --compact-display  Makes the output take up less vertical space by removing unnecessary\n"
 				"                       sections and line breaks. It comes in handy when pairing linux-hunter\n"
 				"                       with vkdto (see https://github.com/Emanem/linux-hunter#vulkan-overlay)\n"
 				"    --help             prints this help and exit\n\n"
@@ -118,7 +118,7 @@ namespace {
 			{"help",		no_argument,	   0,	0},
 			{"mhw-pid",		required_argument, 0,   0},
 			{"show-monsters",	no_argument,	   0,	'm'},
-			{"show-crowns",	   	no_argument,	   0,	'c'},
+			{"show-crowns",	    no_argument,	   0,	'c'},
 			{"save",		required_argument, 0,	's'},
 			{"load",		required_argument, 0,	'l'},
 			{"no-direct-mem",	no_argument,	   0,	0},
@@ -129,7 +129,7 @@ namespace {
 			{"no-lazy-alloc",	no_argument,	   0,	0},
 			{"refresh",		required_argument, 0,   'r'},
 			{"no-color",		no_argument,       0,	0},
-            		{"compact-display",	no_argument,       0,	0},
+			{"compact-display",	no_argument,       0,	0},
 			{0, 0, 0, 0}
 		};
 

@@ -67,7 +67,7 @@ Executes linux-hunter 0.1.3
 -r, --refresh i         Specifies what is the UI/stats refresh interval in ms (default 1000)
     --no-color          Do not use colours when rendering text (useful on distro which can't
                         handle ncurses properly and end up not displaying text)
-    --compact-display   Makes the output take less vertical space by removing unnecessary
+    --compact-display   Makes the output take up less vertical space by removing unnecessary
                         sections and line breaks. It comes in handy when pairing linux-hunter
                         with vkdto (see https://github.com/Emanem/linux-hunter#vulkan-overlay)
  
