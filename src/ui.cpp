@@ -56,6 +56,7 @@ extern void ui::draw(vbrush::iface* b, const size_t flags, const app_data& ad, c
 	static const vbrush::iface::attr v_colors[] = { vbrush::iface::attr::C_BLUE, vbrush::iface::attr::C_MAGENTA, vbrush::iface::attr::C_YELLOW, vbrush::iface::attr::C_GREEN };
 	for(size_t i = 0; i < sizeof(d.players)/sizeof(d.players[0]); ++i) {
 		if(!d.players[i].used) {
+			// in compact mode, skip displaying empty player lines
 			if (!compact_display) {
 				std::snprintf(buf, 256, "%-*s%-4d                  ", 32 + h_add_offset, "<N/A>", (int)i);
 				b->set_attr_on(vbrush::iface::attr::DIM);
