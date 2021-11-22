@@ -68,7 +68,8 @@ namespace {
 			mem_dirty_opt = false,
 			lazy_alloc = true,
 			direct_mem = true,
-			no_color = false;
+			no_color = false,
+            		compact_display = false;
 	size_t		refresh_interval = 1000;
 
 	void print_help(const char *prog, const char *version) {
@@ -114,7 +115,7 @@ namespace {
 			{"help",		no_argument,	   0,	0},
 			{"mhw-pid",		required_argument, 0,   0},
 			{"show-monsters",	no_argument,	   0,	'm'},
-			{"show-crowns",	    no_argument,	   0,	'c'},
+			{"show-crowns",	   	no_argument,	   0,	'c'},
 			{"save",		required_argument, 0,	's'},
 			{"load",		required_argument, 0,	'l'},
 			{"no-direct-mem",	no_argument,	   0,	0},
@@ -125,6 +126,7 @@ namespace {
 			{"no-lazy-alloc",	no_argument,	   0,	0},
 			{"refresh",		required_argument, 0,   'r'},
 			{"no-color",		no_argument,       0,	0},
+            		{"compact-display",	no_argument,       0,	0},
 			{0, 0, 0, 0}
 		};
 
@@ -157,6 +159,8 @@ namespace {
 					direct_mem = false;
 				} else if (!std::strcmp("no-color", long_options[option_index].name)) {
 					no_color = true;
+				} else if (!std::strcmp("compact-display", long_options[option_index].name)) {
+					compact_display = true;
 				}
 			} break;
 
@@ -329,8 +333,8 @@ int main(int argc, char *argv[]) {
 			timer::thread_tmr	tt(&ad.tm);
 			mb.update();
 			mhw_lookup::get_data(mhwpd, mb, mhwd);
-			ui::draw(w_dpy.get(), draw_flags, ad, mhwd, no_color);
-			if(f_dpy) ui::draw(f_dpy.get(), draw_flags, ad, mhwd, no_color);
+			ui::draw(w_dpy.get(), draw_flags, ad, mhwd, no_color, compact_display);
+			if(f_dpy) ui::draw(f_dpy.get(), draw_flags, ad, mhwd, no_color, compact_display);
 			size_t			cur_refresh_tm = 0;
 			do {
 				const auto 	tm_get = tt.get_wall();

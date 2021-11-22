@@ -40,7 +40,7 @@ namespace ui {
 		SHOW_CROWN_DATA = 2,
 	};
 
-	extern void draw(vbrush::iface* b, const size_t flags, const app_data& ad, const mhw_data& d, const bool no_color);
+	extern void draw(vbrush::iface* b, const size_t flags, const app_data& ad, const mhw_data& d, const bool no_color, const bool compact_display);
 }
 
 #endif // _UI_H_
