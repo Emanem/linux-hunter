@@ -39,41 +39,44 @@ Running the application as `./linux-hunter --help` will produce the following:
 Usage: ./linux-hunter [options]
 Executes linux-hunter 0.1.3
 
--m, --show-monsters Shows HP monsters data (requires slightly more CPU usage)
--c, --show-crowns   Shows information about crowns (Gold Small, Silver Large and Gold Large)
--s, --save dir      Captures the specified pid into directory 'dir' and quits
--l, --load dir      Loads the specified capture directory 'dir' and displays
-                    info (static - useful for debugging)
-    --no-direct-mem Don't access MH:W memory directly and dynamically, use a local copy
-                    via buffers - increase CPU usage (both u and s) at the advantage
-                    of potentially slightly less inconsistencies
--f, --f-display f   Writes the content of display on a file 'f', refreshing such file
-                    every same iteration. The content of the file is a 'wchar_t' similar
-                    to the UI, having special '#' as escape character to denote styles
-                    and formats (see sources for usage of '#' escape sequances)
-                    It is heavily suggested to have file 'f' under '/dev/shm' or '/tmp'
-                    memory backed filesystem
-    --mhw-pid p     Specifies which pid to scan memory for (usually main MH:W)
-                    When not specified, linux-hunter will try to find it automatically
-                    This is default behaviour
-    --debug-ptrs    Prints the main AoB (Array of Bytes) pointers (useful for debugging)
-    --debug-all     Prints all the AoB (Array of Bytes) partial and full matches
-                    (useful for analysing AoB) and quits; implies setting debug-ptrs
-    --mem-dirty-opt Enable optimization to load memory pages just once per refresh;
-                    this should be slightly less accurate but uses less system time
-    --no-lazy-alloc Disable optimization to reduce memory usage and always allocates memory
-                    to copy MH:W process - minimize dynamic allocations at the expense of
-                    memory usage; decrease calls to alloc/free functions
--r, --refresh i     Specifies what is the UI/stats refresh interval in ms (default 1000)
-    --no-color      Do not use colours when rendering text (useful on distro which can't
-                    handle ncurses properly and end up not displaying text)
+-m, --show-monsters     Shows HP monsters data (requires slightly more CPU usage)
+-c, --show-crowns       Shows information about crowns (Gold Small, Silver Large and Gold Large)
+-s, --save dir          Captures the specified pid into directory 'dir' and quits
+-l, --load dir          Loads the specified capture directory 'dir' and displays
+                        info (static - useful for debugging)
+    --no-direct-mem     Don't access MH:W memory directly and dynamically, use a local copy
+                        via buffers - increase CPU usage (both u and s) at the advantage
+                        of potentially slightly less inconsistencies
+-f, --f-display f       Writes the content of display on a file 'f', refreshing such file
+                        every same iteration. The content of the file is a 'wchar_t' similar
+                        to the UI, having special '#' as escape character to denote styles
+                        and formats (see sources for usage of '#' escape sequances)
+                        It is heavily suggested to have file 'f' under '/dev/shm' or '/tmp'
+                        memory backed filesystem
+    --mhw-pid p         Specifies which pid to scan memory for (usually main MH:W)
+                        When not specified, linux-hunter will try to find it automatically
+                        This is default behaviour
+    --debug-ptrs        Prints the main AoB (Array of Bytes) pointers (useful for debugging)
+    --debug-all         Prints all the AoB (Array of Bytes) partial and full matches
+                        (useful for analysing AoB) and quits; implies setting debug-ptrs
+    --mem-dirty-opt     Enable optimization to load memory pages just once per refresh;
+                        this should be slightly less accurate but uses less system time
+    --no-lazy-alloc     Disable optimization to reduce memory usage and always allocates memory
+                        to copy MH:W process - minimize dynamic allocations at the expense of
+                        memory usage; decrease calls to alloc/free functions
+-r, --refresh i         Specifies what is the UI/stats refresh interval in ms (default 1000)
+    --no-color          Do not use colours when rendering text (useful on distro which can't
+                        handle ncurses properly and end up not displaying text)
+    --compact-display   Makes the output take up less vertical space by removing unnecessary
+                        sections and line breaks. It comes in handy when pairing linux-hunter
+                        with vkdto (see https://github.com/Emanem/linux-hunter#vulkan-overlay)
  
-    --help          prints this help and exit
+    --help              prints this help and exit
 
 When linux-hunter is running:
 
-'q' or 'ESC'        Quits the application
-'r'                 Force a refresh
+'q' or 'ESC'            Quits the application
+'r'                     Force a refresh
 ```
 
 ## UI

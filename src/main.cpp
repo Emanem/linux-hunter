@@ -68,43 +68,47 @@ namespace {
 			mem_dirty_opt = false,
 			lazy_alloc = true,
 			direct_mem = true,
-			no_color = false;
+			no_color = false,
+			compact_display = false;
 	size_t		refresh_interval = 1000;
 
 	void print_help(const char *prog, const char *version) {
 		std::cerr <<	"Usage: " << prog << " [options]\nExecutes linux-hunter " << version << "\n\n"
-				"-m, --show-monsters Shows HP monsters data (requires slightly more CPU usage)\n"
-				"-c, --show-crowns   Shows information about crowns (Gold Small, Silver Large and Gold Large)\n"
-				"-s, --save dir      Captures the specified pid into directory 'dir' and quits\n"
-				"-l, --load dir      Loads the specified capture directory 'dir' and displays\n"
-				"                    info (static - useful for debugging)\n"
-				"    --no-direct-mem Don't access MH:W memory directly and dynamically, use a local copy\n"
-				"                    via buffers - increase CPU usage (both u and s) at the advantage\n"
-				"                    of potentially slightly less inconsistencies\n"
-				"-f, --f-display f   Writes the content of display on a file 'f', refreshing such file\n"
-				"                    every same iteration. The content of the file is a 'wchar_t' similar\n"
-				"                    to the UI, having special '#' as escape character to denote styles\n"
-				"                    and formats (see sources for usage of '#' escape sequances)\n"
-				"                    It is heavily suggested to have file 'f' under '/dev/shm' or '/tmp'\n"
-				"                    memory backed filesystem\n"	
-				"    --mhw-pid p     Specifies which pid to scan memory for (usually main MH:W)\n"
-				"                    When not specified, linux-hunter will try to find it automatically\n"
-				"                    This is default behaviour\n"
-				"    --debug-ptrs    Prints the main AoB (Array of Bytes) pointers (useful for debugging)\n"
-				"    --debug-all     Prints all the AoB (Array of Bytes) partial and full matches\n"
-				"                    (useful for analysing AoB) and quits; implies setting debug-ptrs\n"
-				"    --mem-dirty-opt Enable optimization to load memory pages just once per refresh;\n"
-				"                    this should be slightly less accurate but uses less system time\n"
-				"    --no-lazy-alloc Disable optimization to reduce memory usage and always allocates memory\n"
-				"                    to copy MH:W process - minimize dynamic allocations at the expense of\n"
-				"                    memory usage; decrease calls to alloc/free functions\n"
-				"-r, --refresh i     Specifies what is the UI/stats refresh interval in ms (default 1000)\n"
-				"    --no-color      Do not use colours when rendering text (useful on distro which can't\n"
-				"                    handle ncurses properly and end up not displaying text)\n"
-				"    --help          prints this help and exit\n\n"
+				"-m, --show-monsters    Shows HP monsters data (requires slightly more CPU usage)\n"
+				"-c, --show-crowns      Shows information about crowns (Gold Small, Silver Large and Gold Large)\n"
+				"-s, --save dir         Captures the specified pid into directory 'dir' and quits\n"
+				"-l, --load dir         Loads the specified capture directory 'dir' and displays\n"
+				"                       info (static - useful for debugging)\n"
+				"    --no-direct-mem    Don't access MH:W memory directly and dynamically, use a local copy\n"
+				"                       via buffers - increase CPU usage (both u and s) at the advantage\n"
+				"                       of potentially slightly less inconsistencies\n"
+				"-f, --f-display f      Writes the content of display on a file 'f', refreshing such file\n"
+				"                       every same iteration. The content of the file is a 'wchar_t' similar\n"
+				"                       to the UI, having special '#' as escape character to denote styles\n"
+				"                       and formats (see sources for usage of '#' escape sequances)\n"
+				"                       It is heavily suggested to have file 'f' under '/dev/shm' or '/tmp'\n"
+				"                       memory backed filesystem\n"	
+				"    --mhw-pid p        Specifies which pid to scan memory for (usually main MH:W)\n"
+				"                       When not specified, linux-hunter will try to find it automatically\n"
+				"                       This is default behaviour\n"
+				"    --debug-ptrs       Prints the main AoB (Array of Bytes) pointers (useful for debugging)\n"
+				"    --debug-all        Prints all the AoB (Array of Bytes) partial and full matches\n"
+				"                       (useful for analysing AoB) and quits; implies setting debug-ptrs\n"
+				"    --mem-dirty-opt    Enable optimization to load memory pages just once per refresh;\n"
+				"                       this should be slightly less accurate but uses less system time\n"
+				"    --no-lazy-alloc    Disable optimization to reduce memory usage and always allocates memory\n"
+				"                       to copy MH:W process - minimize dynamic allocations at the expense of\n"
+				"                       memory usage; decrease calls to alloc/free functions\n"
+				"-r, --refresh i        Specifies what is the UI/stats refresh interval in ms (default 1000)\n"
+				"    --no-color         Do not use colours when rendering text (useful on distro which can't\n"
+				"                       handle ncurses properly and end up not displaying text)\n"
+				"    --compact-display  Makes the output take up less vertical space by removing unnecessary\n"
+				"                       sections and line breaks. It comes in handy when pairing linux-hunter\n"
+				"                       with vkdto (see https://github.com/Emanem/linux-hunter#vulkan-overlay)\n"
+				"    --help             prints this help and exit\n\n"
 				"When linux-hunter is running:\n\n"
-				"'q' or 'ESC'        Quits the application\n"
-				"'r'                 Force a refresh\n"
+				"'q' or 'ESC'           Quits the application\n"
+				"'r'                    Force a refresh\n"
 		<< std::flush;
 	}
 
@@ -125,6 +129,7 @@ namespace {
 			{"no-lazy-alloc",	no_argument,	   0,	0},
 			{"refresh",		required_argument, 0,   'r'},
 			{"no-color",		no_argument,       0,	0},
+			{"compact-display",	no_argument,       0,	0},
 			{0, 0, 0, 0}
 		};
 
@@ -157,6 +162,8 @@ namespace {
 					direct_mem = false;
 				} else if (!std::strcmp("no-color", long_options[option_index].name)) {
 					no_color = true;
+				} else if (!std::strcmp("compact-display", long_options[option_index].name)) {
+					compact_display = true;
 				}
 			} break;
 
@@ -329,8 +336,8 @@ int main(int argc, char *argv[]) {
 			timer::thread_tmr	tt(&ad.tm);
 			mb.update();
 			mhw_lookup::get_data(mhwpd, mb, mhwd);
-			ui::draw(w_dpy.get(), draw_flags, ad, mhwd, no_color);
-			if(f_dpy) ui::draw(f_dpy.get(), draw_flags, ad, mhwd, no_color);
+			ui::draw(w_dpy.get(), draw_flags, ad, mhwd, no_color, compact_display);
+			if(f_dpy) ui::draw(f_dpy.get(), draw_flags, ad, mhwd, no_color, compact_display);
 			size_t			cur_refresh_tm = 0;
 			do {
 				const auto 	tm_get = tt.get_wall();

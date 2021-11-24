@@ -1,6 +1,6 @@
 #include "ui.h"
 
-extern void ui::draw(vbrush::iface* b, const size_t flags, const app_data& ad, const mhw_data& d, const bool no_color) {
+extern void ui::draw(vbrush::iface* b, const size_t flags, const app_data& ad, const mhw_data& d, const bool no_color, const bool compact_display) {
 	char		buf[256]; // local buffer for strings
 	if(!b->init())
 		return;
@@ -16,26 +16,29 @@ extern void ui::draw(vbrush::iface* b, const size_t flags, const app_data& ad, c
 	Player Name 32                          Id 4Damage 10 % 6
 	EEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEIIIIDDDDDDDDDDPPPPPP
 	 */ 
-	// print title
 	// if crown data is enabled, the total h_offset has ot be increased by 8
 	const unsigned	h_add_offset = ((flags & draw_flags::SHOW_CROWN_DATA) ? 8 : 0);
-	{
-		std::snprintf(buf, 256, "linux-hunter %-*s(%4ld/%4ld/%4ld w/u/s)", 19 + h_add_offset, ad.version, ad.tm.wall, ad.tm.user, ad.tm.system);
-		b->draw_text(buf);
-		b->next_row();
-	}
-	// print main stats
-	{
-		b->draw_text("SessionId:[");
-		b->set_attr_on(vbrush::iface::attr::BOLD);
-		b->draw_text(d.session_id.c_str());
-		b->set_attr_off(vbrush::iface::attr::BOLD);
-		b->draw_text("] Host:[");
-		b->set_attr_on(vbrush::iface::attr::BOLD);
-		b->draw_text(d.host_name.c_str());
-		b->set_attr_off(vbrush::iface::attr::BOLD);
-		b->draw_text("]");
-		b->next_row(2);
+	
+	if (!compact_display) {
+		// print title
+		{
+			std::snprintf(buf, 256, "linux-hunter %-*s(%4ld/%4ld/%4ld w/u/s)", 19 + h_add_offset, ad.version, ad.tm.wall, ad.tm.user, ad.tm.system);
+			b->draw_text(buf);
+			b->next_row();
+		}
+		// print main stats
+		{
+			b->draw_text("SessionId:[");
+			b->set_attr_on(vbrush::iface::attr::BOLD);
+			b->draw_text(d.session_id.c_str());
+			b->set_attr_off(vbrush::iface::attr::BOLD);
+			b->draw_text("] Host:[");
+			b->set_attr_on(vbrush::iface::attr::BOLD);
+			b->draw_text(d.host_name.c_str());
+			b->set_attr_off(vbrush::iface::attr::BOLD);
+			b->draw_text("]");
+			b->next_row(2);
+		}
 	}
 	// print header
 	{
@@ -51,12 +54,16 @@ extern void ui::draw(vbrush::iface* b, const size_t flags, const app_data& ad, c
 		total_damage += (d.players[i].used) ? d.players[i].damage : 0;
 	// print players data
 	static const vbrush::iface::attr v_colors[] = { vbrush::iface::attr::C_BLUE, vbrush::iface::attr::C_MAGENTA, vbrush::iface::attr::C_YELLOW, vbrush::iface::attr::C_GREEN };
-	for(size_t i = 0; i < sizeof(d.players)/sizeof(d.players[0]); ++i, b->next_row()) {
+	for(size_t i = 0; i < sizeof(d.players)/sizeof(d.players[0]); ++i) {
 		if(!d.players[i].used) {
-			std::snprintf(buf, 256, "%-*s%-4d                  ", 32 + h_add_offset, "<N/A>", (int)i);
-			b->set_attr_on(vbrush::iface::attr::DIM);
-			b->draw_text(buf);
-			b->set_attr_off(vbrush::iface::attr::DIM);
+			// in compact mode, skip displaying empty player lines
+			if (!compact_display) {
+				std::snprintf(buf, 256, "%-*s%-4d                  ", 32 + h_add_offset, "<N/A>", (int)i);
+				b->set_attr_on(vbrush::iface::attr::DIM);
+				b->draw_text(buf);
+				b->set_attr_off(vbrush::iface::attr::DIM);
+				b->next_row();
+			}
 			continue;
 		}
 		const auto	name_attr = (d.players[i].left_session) ? vbrush::iface::attr::DIM : v_colors[i];
@@ -77,6 +84,7 @@ extern void ui::draw(vbrush::iface* b, const size_t flags, const app_data& ad, c
 		b->draw_text(buf);
 		if(d.players[i].left_session)
 			b->set_attr_off(name_attr);
+        	b->next_row();
 	}
 	// now just the total
 	{
@@ -87,7 +95,7 @@ extern void ui::draw(vbrush::iface* b, const size_t flags, const app_data& ad, c
 	}
 	// flasg to check monster data
 	if(flags & draw_flags::SHOW_MONSTER_DATA) {
-		b->next_row(2);
+		b->next_row(compact_display ? 1 : 2);
 		// then Monsters - first header
 		if(flags & draw_flags::SHOW_CROWN_DATA)
 			std::snprintf(buf, 256, "%-32s%-14s%-8s%-8s", "Monster Name", "HP", "%","Crown");
