@@ -1,0 +1,22 @@
+---
+
+name: Test build
+
+on: [push, pull_request]
+
+jobs:
+    test_build:
+        name: Build linux-hunter
+        runs-on: ubuntu-latest
+        steps:
+            - uses: actions/checkout@v2
+            - name: Update dependencies
+              run: |
+                sudo apt update
+                sudo apt install g++ meson libncurses-dev
+            - name: Compile
+              run: |
+                meson setup ./build
+                cd ./build
+                ninja
+                sudo ninja install

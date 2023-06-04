@@ -166,8 +166,23 @@ in memory but hooking functions that the game uses to load the data. It may or m
 Unforutnately looks like CAPCOM and/or wine/Proton are protecting memory, hence this requires `sudo` access when running.
 
 ## How to build
-You need to have `libncursesw5-dev` installed to compile (on Ubuntu is `sudo apt install libncursesw5-dev`) and that's it.
-Once done, `make release` and you'll have your _linux-hunter_ ready to be running.
+
+### Requirements
+
+You need to have `libncurses-dev` installed to compile (on Ubuntu is `sudo apt install libncurses-dev`), meson build
+system and C++ compiler. (for example, g++)
+
+### Build instructions
+
+_linux-hunter_ uses [Meson](https://mesonbuild.com/) build system.
+
+The generalized instructions to compile are following (ran from _linux-hunter_ source folder):
+
+1. Setup build folder: `meson setup --buildtype=release build`
+1. Switch to build folder: `cd ./build`
+1. Compile: `ninja`
+1. Optionally install: `sudo ninja install`
+1. To uninstall: `sudo ninja uninstall`
 
 ## How to run
 The most optimized way to run _linux-hunter_ would be `sudo ./linux-hunter -m`; this way you would start it using both low CPU and memory, plus displaying _monsters_ information. In this case _linux-hunter_ will try to find MH:W _pid_ (if this fails to find the pid, you can use the `--pid <pid>` option).
