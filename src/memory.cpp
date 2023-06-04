@@ -21,6 +21,7 @@
 #include <memory>
 #include <algorithm>
 #include <cstring>
+#include <limits>
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <dirent.h>
