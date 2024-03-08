@@ -22,6 +22,7 @@ Prototype MH:W companion app for Linux, inspired by SmartHunter.
 
 ## Supported Versions
 
+* 15.21.00 - **This new version of the game has modified memory patterns holding players' names and damage values hence this utility is only partially working. No fix has been planned as of now**
 * 15.11.01 - Fully Supported 
 * 15.11.00 - Fully Supported (this is deprecated by CAPCOM)
 * 15.10.00 - Fully Supported (this is deprecated by CAPCOM)
